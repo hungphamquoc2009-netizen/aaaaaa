@@ -96,18 +96,22 @@
                 // Tạo một mã nạp ngẫu nhiên 6 số cho User mới này
                 const myCode = Math.floor(100000 + Math.random() * 900000).toString(); 
 
+                // TẠO DATA VÀ TẶNG 30K + GHI LỊCH SỬ
                 db.collection("users").doc(user.uid).set({
                     username: name,
                     email: email,
-                    depositCode: myCode, // Mã nạp của chính họ
-                    referredBy: refCode, // Ai là người mời họ? (Trống nếu ko có)
-                    profit: 0,
+                    depositCode: myCode, 
+                    referredBy: refCode, 
+                    profit: 30000, // <-- Đã đổi thành 30K
                     claimedCommission: 0,
                     investments: [],
-                    transactions: [],
+                    transactions: [
+                        // <-- Đã thêm lịch sử tặng 30K
+                        { time: new Date().toLocaleString('vi-VN'), amount: 30000, note: "🎁 Tặng thưởng Tân thủ" }
+                    ],
                     createdAt: new Date().toLocaleString('vi-VN')
                 }).then(() => {
-                    alert("✅ Đăng ký thành công! Đang chuyển vào Căn Cứ...");
+                    alert("✅ Đăng ký thành công! Bạn được tặng 30.000 VNĐ. Đang chuyển vào Căn Cứ...");
                     window.location.href = "dashboard.html"; // Vào thẳng Dashboard
                 });
             }).catch((error) => {
