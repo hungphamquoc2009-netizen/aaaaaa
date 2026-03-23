@@ -49,11 +49,8 @@
         .product-card { background: var(--card-bg); border: 1px solid #333; border-radius: 16px; padding: 20px; transition: var(--transition); display: flex; flex-direction: column; gap: 15px;}
         .product-card:hover { border-color: var(--garena-red); transform: translateY(-5px); box-shadow: var(--neon-glow); }
         .pc-header { display: flex; justify-content: space-between; align-items: center; }
-        .pc-title { font-size: 16px; font-weight: 900; color: #fff; text-transform: uppercase; display: flex; align-items: center; gap: 10px;}
-        
-        /* Bỏ CSS cứng để dùng style động từ JS */
-        .pc-badge { font-size: 10px; font-weight: 800; padding: 5px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px;}
-        
+        .pc-title { font-size: 18px; font-weight: 900; color: #fff; text-transform: uppercase; display: flex; align-items: center; gap: 10px;}
+        .pc-badge { font-size: 11px; font-weight: 800; padding: 5px 12px; border-radius: 20px; background: rgba(255,215,0,0.1); color: #ffd700; border: 1px solid #ffd700; text-transform: uppercase; letter-spacing: 0.5px;}
         .pc-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-gray); border-bottom: 1px dashed #222; padding-bottom: 8px;}
         .pc-row strong { color: #fff; font-size: 14px; }
         .pc-estimate { background: #1a1a1a; padding: 15px; border-radius: 12px; border: 1px solid #222; }
@@ -245,7 +242,7 @@
             <div class="input-group"><label>Tên Ngân Hàng (VD: MBBank...)</label><input type="text" id="w-bank" placeholder="Nhập tên ngân hàng..."></div>
             <div class="input-group"><label>Số Tài Khoản</label><input type="number" id="w-acc" placeholder="Nhập số tài khoản..."></div>
             <div class="input-group"><label>Tên Chủ Tài Khoản (Không dấu)</label><input type="text" id="w-name" placeholder="NGUYEN VAN A"></div>
-            <div class="input-group"><label>Số Tiền Rút (Tối thiểu 50.000đ)</label><input type="number" id="w-amount" placeholder="Ví dụ: 100000"></div>
+            <div class="input-group"><label>Số Tiền Rút (Tối thiểu 30.000đ)</label><input type="number" id="w-amount" placeholder="Ví dụ: 100000"></div>
             <button class="btn-submit" style="background:var(--success); color:#000;" onclick="submitWithdraw()">XÁC NHẬN RÚT TIỀN</button>
         </div>
     </div>
@@ -314,7 +311,7 @@
             }
         });
 
-        // 1. TẢI SẢN PHẨM & SẮP XẾP THEO GIÁ
+        // TẢI SẢN PHẨM & SẮP XẾP THEO GIÁ
         db.collection("packages").onSnapshot((snapshot) => {
             let pArr = [];
             snapshot.forEach((doc) => { pArr.push(doc.data()); });
@@ -327,8 +324,6 @@
 
             pArr.forEach((p) => {
                 let rate = p.profit || 30; let dailyProfit = (p.price * rate) / 100;
-                
-                // 2. ĐỒNG BỘ MÀU TAG VỚI TRANG ADMIN
                 let badgeColor = p.badge === 'HOT' ? '#e74c3c' : (p.badge === 'Mới ra mắt' ? '#3498db' : '#f39c12');
                 let safeName = p.name ? p.name.replace(/'/g, "\\'") : "Gói Đầu Tư";
                 let pCode = p.code || p.id || "PKG";
@@ -421,15 +416,27 @@
             auth.currentUser.updatePassword(newPass).then(() => { alert("✅ Đổi mật khẩu thành công! Hãy ghi nhớ mật khẩu mới của bạn."); document.getElementById('new-pass').value = ''; document.getElementById('confirm-pass').value = ''; }).catch(e => { if(e.code === 'auth/requires-recent-login') { alert("⛔ Phiên đăng nhập đã cũ để đảm bảo an toàn. Vui lòng Đăng xuất và Đăng nhập lại để thực hiện đổi mật khẩu."); } else { alert("Lỗi: " + e.message); } });
         };
 
+        // --- BỎ CHẶN KHI MỞ BẢNG RÚT TIỀN (Chỉ chặn tài khoản chưa mua gói) ---
         window.openWithdraw = () => { 
-            if (!myInvestments || myInvestments.length === 0) { return alert("⛔ TÀI KHOẢN CHƯA KÍCH HOẠT!\n\nBạn cần nạp tiền và mua ít nhất 1 Quỹ đầu tư để kích hoạt chức năng Rút tiền."); }
-            if (globalProfit < 50000) { return alert("❌ Bạn cần tối thiểu 50.000 VNĐ tiền lãi để thực hiện lệnh rút!"); }
+            if (!myInvestments || myInvestments.length === 0) { 
+                return alert("⛔ TÀI KHOẢN CHƯA KÍCH HOẠT!\n\nBạn cần nạp tiền và mua ít nhất 1 Quỹ đầu tư để kích hoạt chức năng Rút tiền."); 
+            }
             document.getElementById('withdraw-modal').style.display = 'flex'; 
         };
 
+        // --- KIỂM TRA ĐIỀU KIỆN KHI BẤM RÚT (Min rút 30.000đ) ---
         window.submitWithdraw = () => {
-            let bank = document.getElementById('w-bank').value.trim(); let acc = document.getElementById('w-acc').value.trim(); let name = document.getElementById('w-name').value.trim().toUpperCase(); let amt = parseInt(document.getElementById('w-amount').value);
-            if(!bank || !acc || !name || isNaN(amt)) return alert("Vui lòng nhập đầy đủ thông tin!"); if(amt < 50000) return alert("Số tiền rút tối thiểu là 50.000 VNĐ!"); if(amt > globalProfit) return alert("Số dư lợi nhuận không đủ!");
+            let bank = document.getElementById('w-bank').value.trim(); 
+            let acc = document.getElementById('w-acc').value.trim(); 
+            let name = document.getElementById('w-name').value.trim().toUpperCase(); 
+            let amt = parseInt(document.getElementById('w-amount').value);
+
+            if(!bank || !acc || !name || isNaN(amt)) return alert("Vui lòng nhập đầy đủ thông tin!"); 
+            
+            // Giữ nguyên kiểm tra 30k ở lúc BẤM XÁC NHẬN RÚT
+            if(amt < 30000) return alert("Số tiền rút tối thiểu là 30.000 VNĐ!"); 
+            if(amt > globalProfit) return alert("Số dư lợi nhuận không đủ!");
+            
             if(!confirm(`Xác nhận rút ${amt.toLocaleString('vi-VN')} VNĐ về ${bank} - ${acc}?`)) return;
             let exactTime = new Date().toLocaleString('vi-VN'); let newTrans = [...globalTransactions]; newTrans.unshift({ time: exactTime, amount: -amt, note: "Đặt lệnh rút tiền" });
             db.collection("users").doc(globalUid).update({ profit: globalProfit - amt, transactions: newTrans }).then(() => { db.collection("withdrawals").add({ uid: globalUid, username: globalUsername, bankId: bank, accountNo: acc, accountName: name, amount: amt, status: "Chờ duyệt", time: exactTime, rawTime: Date.now() }); alert("✅ Đã gửi lệnh rút tiền thành công! Hệ thống đang xử lý..."); document.getElementById('withdraw-modal').style.display = 'none'; document.getElementById('w-bank').value = ''; document.getElementById('w-acc').value = ''; document.getElementById('w-name').value = ''; document.getElementById('w-amount').value = ''; }).catch(e => alert("Lỗi khi xử lý: " + e.message));
