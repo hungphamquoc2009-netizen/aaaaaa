@@ -9,19 +9,23 @@
         body { background: #050505; color: #fff; display: flex; height: 100vh; overflow: hidden; }
         :root { --garena-red: #eb0029; --dark-bg: #0a0a0a; --card-bg: #111; --border-color: #222; --text-gray: #888; --neon-glow: 0 0 15px rgba(235, 0, 41, 0.5); --success: #00ff88; --transition: all 0.3s ease; }
         
-        .sidebar { width: 260px; background: var(--dark-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 25px 20px; z-index: 10; }
+        .sidebar { width: 280px; background: var(--dark-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 25px 20px; z-index: 1001; position: fixed; top: 0; left: -280px; height: 100vh; transition: var(--transition); }
+        .sidebar.active { left: 0; }
+        .menu-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; display: none; backdrop-filter: blur(3px); }
+        .menu-overlay.active { display: block; }
         .sidebar h2 { font-size: 26px; font-weight: 900; font-style: italic; color: #fff; margin-bottom: 40px; text-align: center; }
         .sidebar h2 span { color: var(--garena-red); text-shadow: var(--neon-glow); }
         .nav-menu { display: flex; flex-direction: column; gap: 8px; flex: 1; }
         .menu-item { padding: 14px 18px; color: var(--text-gray); text-decoration: none; border-radius: 10px; font-weight: bold; transition: var(--transition); display: flex; align-items: center; gap: 12px; font-size: 14px; text-transform: uppercase; cursor: pointer;}
         .menu-item:hover, .menu-item.active { background: rgba(235, 0, 41, 0.1); color: var(--garena-red); border-left: 4px solid var(--garena-red); }
         
-        .content { flex: 1; padding: 30px 50px; overflow-y: auto; background: radial-gradient(circle at top right, #1a0004 0%, #050505 60%); }
+        .content { width: 100%; height: 100vh; padding: 20px; overflow-y: auto; background: radial-gradient(circle at top right, #1a0004 0%, #050505 60%); }
         .page { display: none; animation: fadeIn 0.3s; }
         .page.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .hamburger { font-size: 28px; cursor: pointer; color: #fff; background: var(--card-bg); width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 10px; border: 1px solid var(--border-color); }
         .user-profile { display: flex; align-items: center; gap: 15px; background: var(--card-bg); padding: 8px 20px 8px 8px; border-radius: 40px; border: 1px solid var(--border-color); }
         .avatar { width: 45px; height: 45px; border-radius: 50%; background: var(--garena-red); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 20px; box-shadow: var(--neon-glow); }
 
@@ -35,7 +39,6 @@
         .stat-card.yellow-line::before { background: #ffd700; }
         .stat-card.blue-line::before { background: var(--info, #3498db); }
         .stat-card.red-line::before { background: var(--garena-red); }
-        
         .stat-title { color: var(--text-gray); font-size: 12px; text-transform: uppercase; margin-bottom: 10px; font-weight: bold; }
         .stat-value { font-size: 28px; font-weight: bold; }
         
@@ -46,7 +49,7 @@
         .product-card { background: var(--card-bg); border: 1px solid #333; border-radius: 16px; padding: 20px; transition: var(--transition); display: flex; flex-direction: column; gap: 15px;}
         .product-card:hover { border-color: var(--garena-red); transform: translateY(-5px); box-shadow: var(--neon-glow); }
         .pc-header { display: flex; justify-content: space-between; align-items: center; }
-        .pc-title { font-size: 16px; font-weight: 900; color: #fff; text-transform: uppercase; display: flex; align-items: center; gap: 10px;}
+        .pc-title { font-size: 18px; font-weight: 900; color: #fff; text-transform: uppercase; display: flex; align-items: center; gap: 10px;}
         .pc-badge { font-size: 11px; font-weight: 800; padding: 5px 12px; border-radius: 20px; background: rgba(255,215,0,0.1); color: #ffd700; border: 1px solid #ffd700;}
         .pc-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-gray); border-bottom: 1px dashed #222; padding-bottom: 8px;}
         .pc-row strong { color: #fff; font-size: 14px; }
@@ -58,8 +61,8 @@
         .btn-buy { width: 100%; padding: 12px; border-radius: 10px; border: 2px solid #9c88ff; cursor: pointer; font-weight: bold; text-transform: uppercase; background: transparent; transition: 0.3s; color: #fff; font-size: 13px; margin-top: auto;}
         .btn-buy:hover { background: #9c88ff; box-shadow: 0 0 15px rgba(156,136,255,0.5);}
 
-        .table-section { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 25px; }
-        table { width: 100%; border-collapse: collapse; }
+        .table-section { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 25px; overflow-x: auto;}
+        table { width: 100%; border-collapse: collapse; min-width: 500px; }
         th { text-align: left; color: var(--text-gray); padding: 12px; font-size: 12px; text-transform: uppercase; }
         td { padding: 15px 12px; border-bottom: 1px solid #1a1a1a; font-size: 14px; }
         .live-profit { color: #ff9f43; font-weight: 900; font-size: 15px; text-shadow: 0 0 10px rgba(255,159,67,0.3); font-family: monospace;}
@@ -99,44 +102,9 @@
 </head>
 <body>
 
-    <div id="notice-modal" class="modal-overlay">
-        <div class="modal-box" style="width: 400px;">
-            <span class="modal-close" onclick="document.getElementById('notice-modal').style.display='none'">✕</span>
-            <h3 style="color:var(--garena-red); text-transform:uppercase; margin-bottom:15px;">⚠️ Thông báo hệ thống</h3>
-            <div id="popup-body" style="color:#ddd; font-size:14px; line-height:1.6; text-align:left; margin-bottom:20px;">Đang tải...</div>
-            <button class="btn-submit" onclick="document.getElementById('notice-modal').style.display='none'">TÔI ĐÃ HIỂU</button>
-        </div>
-    </div>
+    <div id="menu-overlay" class="menu-overlay" onclick="toggleMenu()"></div>
 
-    <div id="withdraw-modal" class="modal-overlay">
-        <div class="modal-box">
-            <span class="modal-close" onclick="document.getElementById('withdraw-modal').style.display='none'">✕</span>
-            <h3 style="color:var(--success); text-transform:uppercase; margin-bottom:15px;">🏧 Rút Lợi Nhuận</h3>
-            <div style="font-size:12px; color:#aaa; margin-bottom:15px;">Số dư khả dụng: <b id="w-max-profit" style="color:var(--success); font-size:14px;">0 VNĐ</b></div>
-            
-            <div class="input-group"><label>Tên Ngân Hàng (VD: MBBank...)</label><input type="text" id="w-bank" placeholder="Nhập tên ngân hàng..."></div>
-            <div class="input-group"><label>Số Tài Khoản</label><input type="number" id="w-acc" placeholder="Nhập số tài khoản..."></div>
-            <div class="input-group"><label>Tên Chủ Tài Khoản (Không dấu)</label><input type="text" id="w-name" placeholder="NGUYEN VAN A"></div>
-            <div class="input-group"><label>Số Tiền Rút (Tối thiểu 50.000đ)</label><input type="number" id="w-amount" placeholder="Ví dụ: 100000"></div>
-            <button class="btn-submit" style="background:var(--success); color:#000;" onclick="submitWithdraw()">XÁC NHẬN RÚT TIỀN</button>
-        </div>
-    </div>
-
-    <div id="paymentModal" class="modal-overlay">
-        <div class="modal-box">
-            <span class="modal-close" onclick="document.getElementById('paymentModal').style.display='none'">✕</span>
-            <h3 id="modal-title">Thanh Toán</h3>
-            <div class="qr-bg">
-                <img id="qr-img" src="" style="width:100%; max-width:200px">
-                <p style="color:#000; font-weight:bold; margin-top:10px; font-size:12px">Nội dung chuyển khoản:</p>
-                <p id="qr-content" style="color:var(--garena-red); font-size:20px; font-weight:900; letter-spacing:1px"></p>
-                <p style="color:#000; font-weight:bold; font-size:14px">Số tiền: <span id="qr-amount"></span> VNĐ</p>
-            </div>
-            <p style="color:var(--garena-red); font-size:10px; font-weight:bold; margin-top:15px">HỆ THỐNG TỰ ĐỘNG DUYỆT TRONG VÀI GIÂY</p>
-        </div>
-    </div>
-
-    <aside class="sidebar">
+    <aside id="sidebar" class="sidebar">
         <h2>GARENA<br><span>PRO</span></h2>
         <nav class="nav-menu">
             <div class="menu-item active" id="nav-home" onclick="switchPage('home')">📊 Căn Cứ</div>
@@ -151,13 +119,16 @@
 
     <main class="content">
         <div class="top-bar">
-            <div>
-                <h1 style="text-transform:uppercase; font-size: 24px;">Tuyển Thủ Garena</h1>
-                <p>Mã định danh: <span id="display-deposit-code" style="color:var(--garena-red); font-weight:bold; font-size:18px;">------</span></p>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div class="hamburger" onclick="toggleMenu()">☰</div>
+                <div>
+                    <h1 style="text-transform:uppercase; font-size: 18px;">Tuyển Thủ</h1>
+                    <p style="font-size: 12px;">ID: <span id="display-deposit-code" style="color:var(--garena-red); font-weight:bold;">------</span></p>
+                </div>
             </div>
             <div class="user-profile">
                 <div id="avatar-char" class="avatar">?</div>
-                <div id="user-name" style="font-weight:bold">Đang tải...</div>
+                <div id="user-name" style="font-weight:bold; font-size: 13px;">Đang tải...</div>
             </div>
         </div>
 
@@ -251,14 +222,53 @@
                 <button class="btn-submit" onclick="changePassword()">CẬP NHẬT MẬT KHẨU</button>
             </div>
         </div>
-
     </main>
+
+    <div id="notice-modal" class="modal-overlay">
+        <div class="modal-box" style="width: 400px;">
+            <span class="modal-close" onclick="document.getElementById('notice-modal').style.display='none'">✕</span>
+            <h3 style="color:var(--garena-red); text-transform:uppercase; margin-bottom:15px;">⚠️ Thông báo hệ thống</h3>
+            <div id="popup-body" style="color:#ddd; font-size:14px; line-height:1.6; text-align:left; margin-bottom:20px;">Đang tải...</div>
+            <button class="btn-submit" onclick="document.getElementById('notice-modal').style.display='none'">TÔI ĐÃ HIỂU</button>
+        </div>
+    </div>
+
+    <div id="withdraw-modal" class="modal-overlay">
+        <div class="modal-box">
+            <span class="modal-close" onclick="document.getElementById('withdraw-modal').style.display='none'">✕</span>
+            <h3 style="color:var(--success); text-transform:uppercase; margin-bottom:15px;">🏧 Rút Lợi Nhuận</h3>
+            <div style="font-size:12px; color:#aaa; margin-bottom:15px;">Số dư khả dụng: <b id="w-max-profit" style="color:var(--success); font-size:14px;">0 VNĐ</b></div>
+            
+            <div class="input-group"><label>Tên Ngân Hàng (VD: MBBank...)</label><input type="text" id="w-bank" placeholder="Nhập tên ngân hàng..."></div>
+            <div class="input-group"><label>Số Tài Khoản</label><input type="number" id="w-acc" placeholder="Nhập số tài khoản..."></div>
+            <div class="input-group"><label>Tên Chủ Tài Khoản (Không dấu)</label><input type="text" id="w-name" placeholder="NGUYEN VAN A"></div>
+            <div class="input-group"><label>Số Tiền Rút (Tối thiểu 50.000đ)</label><input type="number" id="w-amount" placeholder="Ví dụ: 100000"></div>
+            <button class="btn-submit" style="background:var(--success); color:#000;" onclick="submitWithdraw()">XÁC NHẬN RÚT TIỀN</button>
+        </div>
+    </div>
+
+    <div id="paymentModal" class="modal-overlay">
+        <div class="modal-box">
+            <span class="modal-close" onclick="document.getElementById('paymentModal').style.display='none'">✕</span>
+            <h3 id="modal-title">Thanh Toán</h3>
+            <div class="qr-bg" style="background:#fff; padding:15px; border-radius:12px; margin-top:15px;">
+                <img id="qr-img" src="" style="width:100%; max-width:200px; display: block; margin: 0 auto;">
+                <p style="color:#000; font-weight:bold; margin-top:10px; font-size:12px">Nội dung chuyển khoản:</p>
+                <p id="qr-content" style="color:var(--garena-red); font-size:20px; font-weight:900; letter-spacing:1px"></p>
+                <p style="color:#000; font-weight:bold; font-size:14px">Số tiền: <span id="qr-amount"></span> VNĐ</p>
+            </div>
+            <p style="color:var(--garena-red); font-size:10px; font-weight:bold; margin-top:15px">HỆ THỐNG TỰ ĐỘNG DUYỆT TRONG VÀI GIÂY</p>
+        </div>
+    </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
     <script>
+        function toggleMenu() { document.getElementById('sidebar').classList.toggle('active'); document.getElementById('menu-overlay').classList.toggle('active'); }
+        window.switchPage = function(pageId) { document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.getElementById('page-' + pageId).classList.add('active'); document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active')); document.getElementById('nav-' + pageId).classList.add('active'); if(document.getElementById('sidebar').classList.contains('active')) toggleMenu(); if(pageId === 'invite') loadTeamData(); }
+
         const firebaseConfig = {
             apiKey: "AIzaSyClgn4G01Z9pqAqIj3-NwJ8a0tS1l4AAZU",
             authDomain: "garenabusiness-c3609.firebaseapp.com",
@@ -271,17 +281,7 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        let myDepositCode = ""; let currentItemCount = -1; let globalProfit = 0; let globalUid = "";
-        let globalUsername = ""; let globalEmail = ""; let myInvestments = []; let liveProfitInterval = null;
-        let globalClaimedCommission = 0; let availableCommission = 0; let globalTransactions = [];
-
-        window.switchPage = function(pageId) {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.getElementById('page-' + pageId).classList.add('active');
-            document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
-            document.getElementById('nav-' + pageId).classList.add('active');
-            if(pageId === 'invite') loadTeamData();
-        }
+        let myDepositCode = ""; let currentItemCount = -1; let globalProfit = 0; let globalUid = ""; let globalUsername = ""; let globalEmail = ""; let myInvestments = []; let liveProfitInterval = null; let globalClaimedCommission = 0; let availableCommission = 0; let globalTransactions = [];
 
         function generateFakeWithdrawals() {
             const prefixes = ['032','033','034','035','036','037','038','096','097','098','086','091','094','083','070','079','089','090'];
@@ -311,7 +311,7 @@
             }
         });
 
-        // TẢI SẢN PHẨM KHÔNG ICON
+        // TẢI SẢN PHẨM KHÔNG ICON & AN TOÀN ONCLICK
         db.collection("packages").onSnapshot((snapshot) => {
             const storeBox = document.getElementById('dynamic-store'); storeBox.innerHTML = ""; 
             if (snapshot.empty) return storeBox.innerHTML = "<div style='grid-column: 1/-1; text-align: center; color: #888;'>Cửa hàng đang bảo trì...</div>";
@@ -320,6 +320,10 @@
                 const p = doc.data();
                 let rate = p.profit || 30; let dailyProfit = (p.price * rate) / 100;
                 
+                // Thuật toán chống lỗi nháy đơn (') trong tên Quỹ làm gãy nút click
+                let safeName = p.name ? p.name.replace(/'/g, "\\'") : "Gói Đầu Tư";
+                let pCode = p.code || p.id || "PKG";
+                
                 storeBox.innerHTML += `
                     <div class="product-card">
                         <div class="pc-header">
@@ -327,7 +331,7 @@
                             <div class="pc-badge">${p.badge || 'Phổ Biến'}</div>
                         </div>
                         <div>
-                            <div class="pc-row"><span>Giá vốn đầu tư</span><strong>${p.price.toLocaleString('vi-VN')} đ</strong></div>
+                            <div class="pc-row"><span>Giá vốn đầu tư</span><strong>${Number(p.price).toLocaleString('vi-VN')} đ</strong></div>
                             <div class="pc-row"><span>Lãi suất</span><strong style="color:var(--success)">${rate}% / Ngày</strong></div>
                         </div>
                         <div class="pc-estimate">
@@ -335,27 +339,25 @@
                             <div class="pc-est-row"><span>• Sau 7 ngày</span><strong>${(dailyProfit*7).toLocaleString('vi-VN')} đ</strong></div>
                             <div class="pc-est-row"><span>• Sau 30 ngày</span><strong>${(dailyProfit*30).toLocaleString('vi-VN')} đ</strong></div>
                         </div>
-                        <button class="btn-buy" onclick="openPayment('${p.code}', ${p.price}, '${p.name}')">Đầu Tư Ngay</button>
+                        <button class="btn-buy" onclick="openPayment('${pCode}', ${p.price}, '${safeName}')">Đầu Tư Ngay</button>
                     </div>`;
             });
         });
 
+        // XỬ LÝ MỞ BẢNG THANH TOÁN MƯỢT MÀ
         window.openPayment = function(pkgCode, price, pkgName) {
-            if(!myDepositCode) return alert("Dữ liệu đang tải...");
+            let userCode = myDepositCode || "KHACH";
             document.getElementById('modal-title').innerText = "Thanh toán " + pkgName;
-            document.getElementById('qr-amount').innerText = price.toLocaleString('vi-VN');
-            const content = `MUA ${pkgCode} ${myDepositCode}`; document.getElementById('qr-content').innerText = content;
-            document.getElementById('qr-img').src = `https://img.vietqr.io/image/MB-01800211009999-compact2.png?amount=${price}&addInfo=${content}&accountName=LE%20PHAM%20NHAT%20MINH`;
+            document.getElementById('qr-amount').innerText = Number(price).toLocaleString('vi-VN');
+            const content = `MUA ${pkgCode} ${userCode}`; 
+            document.getElementById('qr-content').innerText = content;
+            
+            let encodedContent = encodeURIComponent(content);
+            document.getElementById('qr-img').src = `https://img.vietqr.io/image/MB-01800211009999-compact2.png?amount=${price}&addInfo=${encodedContent}&accountName=LE%20PHAM%20NHAT%20MINH`;
             document.getElementById('paymentModal').style.display = 'flex';
         }
 
-        function parseDateStr(str) {
-            try {
-                let clean = str.replace(/-/g, '').replace(/,/g, '').trim();
-                let parts = clean.split(' '); let timeStr = parts[0].includes(':') ? parts[0] : parts[1]; let dateStr = parts[0].includes('/') ? parts[0] : parts[1];
-                const [h, m, s] = timeStr.split(':'); const [D, M, Y] = dateStr.split('/'); return new Date(Y, M - 1, D, h, m, s).getTime();
-            } catch(e) { return Date.now(); }
-        }
+        function parseDateStr(str) { try { let clean = str.replace(/-/g, '').replace(/,/g, '').trim(); let parts = clean.split(' '); let timeStr = parts[0].includes(':') ? parts[0] : parts[1]; let dateStr = parts[0].includes('/') ? parts[0] : parts[1]; const [h, m, s] = timeStr.split(':'); const [D, M, Y] = dateStr.split('/'); return new Date(Y, M - 1, D, h, m, s).getTime(); } catch(e) { return Date.now(); } }
 
         function startLiveProfit() {
             if(liveProfitInterval) clearInterval(liveProfitInterval);
@@ -381,41 +383,23 @@
                         globalProfit = data.profit || 0; globalClaimedCommission = data.claimedCommission || 0;
                         globalTransactions = data.transactions || [];
                         
-                        document.getElementById('display-deposit-code').innerText = myDepositCode; 
-                        document.getElementById('user-name').innerText = data.username;
-                        document.getElementById('avatar-char').innerText = data.username.charAt(0).toUpperCase();
-                        document.getElementById('profit-display').innerText = globalProfit.toLocaleString('vi-VN') + " VNĐ";
-                        document.getElementById('w-max-profit').innerText = globalProfit.toLocaleString('vi-VN') + " VNĐ";
-                        document.getElementById('prof-name').innerText = globalUsername;
-                        document.getElementById('prof-email').innerText = globalEmail;
-                        document.getElementById('prof-code').innerText = myDepositCode;
-                        document.getElementById('m-code').innerText = myDepositCode; 
+                        document.getElementById('display-deposit-code').innerText = myDepositCode; document.getElementById('user-name').innerText = data.username; document.getElementById('avatar-char').innerText = data.username.charAt(0).toUpperCase(); document.getElementById('profit-display').innerText = globalProfit.toLocaleString('vi-VN') + " VNĐ"; document.getElementById('w-max-profit').innerText = globalProfit.toLocaleString('vi-VN') + " VNĐ"; document.getElementById('prof-name').innerText = globalUsername; document.getElementById('prof-email').innerText = globalEmail; document.getElementById('prof-code').innerText = myDepositCode; document.getElementById('m-code').innerText = myDepositCode; 
                         
                         myInvestments = data.investments || [];
-                        
-                        if (currentItemCount !== -1 && myInvestments.length > currentItemCount) {
-                            document.getElementById('paymentModal').style.display = 'none';
-                            alert("🎉 BÙM! Thanh toán thành công! Quỹ đầu tư đã được kích hoạt.");
-                        }
+                        if (currentItemCount !== -1 && myInvestments.length > currentItemCount) { document.getElementById('paymentModal').style.display = 'none'; alert("🎉 BÙM! Thanh toán thành công! Quỹ đầu tư đã được kích hoạt."); }
                         currentItemCount = myInvestments.length;
 
                         let total = 0;
                         document.getElementById('investments-list').innerHTML = myInvestments.length ? myInvestments.map((item, index) => {
                             total += item.amount;
-                            return `<tr><td><b style="color:#fff">📦 ${item.name}</b><br><span style="font-size:11px; color:#888;">Gốc: ${item.amount.toLocaleString('vi-VN')} ₫</span></td><td style="color:#aaa">${item.date}</td><td class="live-profit" id="live-p-${index}">Đang tải...</td><td><span class="status-badge">${item.status}</span></td></tr>`;
+                            return `<tr><td><b style="color:#fff">📦 ${item.name}</b><br><span style="font-size:11px; color:#888;">Gốc: ${item.amount.toLocaleString('vi-VN')} ₫</span></td><td style="color:#aaa">${item.date}</td><td class="live-profit" id="live-p-${index}">Đang tải...</td><td><span class="status-badge" style="color:var(--success)">Đang chạy</span></td></tr>`;
                         }).reverse().join('') : '<tr><td colspan="4" style="text-align:center;color:#555;padding:20px">Túi đồ trống. Hãy ra Căn Cứ để chọn quỹ sinh lời!</td></tr>';
                         document.getElementById('invested-display').innerText = total.toLocaleString('vi-VN') + " VNĐ";
                         startLiveProfit();
 
                         let myHistoryArray = [];
-                        myInvestments.forEach(item => {
-                            myHistoryArray.push({ time: item.date, type: "Nạp Mua Gói", tColor: "var(--info)", amount: `-${item.amount.toLocaleString()} ₫`, aColor: "#aaa", detail: item.name, rawTime: parseDateStr(item.date) });
-                        });
-                        globalTransactions.forEach(tx => {
-                            let isAdd = tx.amount > 0;
-                            myHistoryArray.push({ time: tx.time, type: isAdd ? "Cộng Tiền/Thưởng" : "Rút Tiền/Trừ", tColor: isAdd ? "var(--success)" : "var(--danger)", amount: `${isAdd ? '+' : ''}${tx.amount.toLocaleString()} ₫`, aColor: isAdd ? "var(--success)" : "var(--danger)", detail: tx.note, rawTime: parseDateStr(tx.time) });
-                        });
-
+                        myInvestments.forEach(item => { myHistoryArray.push({ time: item.date, type: "Nạp Mua Gói", tColor: "var(--info)", amount: `-${item.amount.toLocaleString()} ₫`, aColor: "#aaa", detail: item.name, rawTime: parseDateStr(item.date) }); });
+                        globalTransactions.forEach(tx => { let isAdd = tx.amount > 0; myHistoryArray.push({ time: tx.time, type: isAdd ? "Cộng Tiền/Thưởng" : "Rút Tiền/Trừ", tColor: isAdd ? "var(--success)" : "var(--danger)", amount: `${isAdd ? '+' : ''}${tx.amount.toLocaleString()} ₫`, aColor: isAdd ? "var(--success)" : "var(--danger)", detail: tx.note, rawTime: parseDateStr(tx.time) }); });
                         myHistoryArray.sort((a, b) => b.rawTime - a.rawTime);
                         document.getElementById('my-history-list').innerHTML = myHistoryArray.length ? myHistoryArray.map(h => `<tr><td style="color:#888; font-size:12px;">${h.time}</td><td><span style="font-size:10px; font-weight:bold; padding:4px 8px; border-radius:4px; background:${h.tColor}22; color:${h.tColor};">${h.type}</span></td><td style="color:${h.aColor}; font-weight:bold;">${h.amount}</td><td style="color:#fff;">${h.detail}</td></tr>`).join('') : '<tr><td colspan="4" style="text-align:center;color:#555;padding:20px">Bạn chưa có lịch sử giao dịch.</td></tr>';
                     }
@@ -424,52 +408,23 @@
         });
 
         window.changePassword = () => {
-            const newPass = document.getElementById('new-pass').value;
-            const confirmPass = document.getElementById('confirm-pass').value;
-            if(!newPass || !confirmPass) return alert("Vui lòng điền đầy đủ mật khẩu mới!");
-            if(newPass !== confirmPass) return alert("Mật khẩu xác nhận không khớp!");
-            if(newPass.length < 6) return alert("Mật khẩu phải chứa ít nhất 6 ký tự!");
-
-            auth.currentUser.updatePassword(newPass).then(() => {
-                alert("✅ Đổi mật khẩu thành công! Hãy ghi nhớ mật khẩu mới của bạn.");
-                document.getElementById('new-pass').value = '';
-                document.getElementById('confirm-pass').value = '';
-            }).catch(e => {
-                if(e.code === 'auth/requires-recent-login') { alert("⛔ Phiên đăng nhập đã cũ để đảm bảo an toàn. Vui lòng Đăng xuất và Đăng nhập lại để thực hiện đổi mật khẩu."); } else { alert("Lỗi: " + e.message); }
-            });
+            const newPass = document.getElementById('new-pass').value; const confirmPass = document.getElementById('confirm-pass').value;
+            if(!newPass || !confirmPass) return alert("Vui lòng điền đầy đủ mật khẩu mới!"); if(newPass !== confirmPass) return alert("Mật khẩu xác nhận không khớp!"); if(newPass.length < 6) return alert("Mật khẩu phải chứa ít nhất 6 ký tự!");
+            auth.currentUser.updatePassword(newPass).then(() => { alert("✅ Đổi mật khẩu thành công! Hãy ghi nhớ mật khẩu mới của bạn."); document.getElementById('new-pass').value = ''; document.getElementById('confirm-pass').value = ''; }).catch(e => { if(e.code === 'auth/requires-recent-login') { alert("⛔ Phiên đăng nhập đã cũ để đảm bảo an toàn. Vui lòng Đăng xuất và Đăng nhập lại để thực hiện đổi mật khẩu."); } else { alert("Lỗi: " + e.message); } });
         };
 
         window.openWithdraw = () => { 
-            if (!myInvestments || myInvestments.length === 0) {
-                return alert("⛔ TÀI KHOẢN CHƯA KÍCH HOẠT!\n\nBạn cần nạp tiền và mua ít nhất 1 Quỹ đầu tư để kích hoạt chức năng Rút tiền.");
-            }
-            if (globalProfit < 50000) {
-                return alert("❌ Bạn cần tối thiểu 50.000 VNĐ tiền lãi để thực hiện lệnh rút!"); 
-            }
+            if (!myInvestments || myInvestments.length === 0) { return alert("⛔ TÀI KHOẢN CHƯA KÍCH HOẠT!\n\nBạn cần nạp tiền và mua ít nhất 1 Quỹ đầu tư để kích hoạt chức năng Rút tiền."); }
+            if (globalProfit < 50000) { return alert("❌ Bạn cần tối thiểu 50.000 VNĐ tiền lãi để thực hiện lệnh rút!"); }
             document.getElementById('withdraw-modal').style.display = 'flex'; 
         };
 
         window.submitWithdraw = () => {
-            let bank = document.getElementById('w-bank').value.trim(); let acc = document.getElementById('w-acc').value.trim();
-            let name = document.getElementById('w-name').value.trim().toUpperCase(); let amt = parseInt(document.getElementById('w-amount').value);
-
-            if(!bank || !acc || !name || isNaN(amt)) return alert("Vui lòng nhập đầy đủ thông tin!");
-            if(amt < 50000) return alert("Số tiền rút tối thiểu là 50.000 VNĐ!"); if(amt > globalProfit) return alert("Số dư lợi nhuận không đủ!");
+            let bank = document.getElementById('w-bank').value.trim(); let acc = document.getElementById('w-acc').value.trim(); let name = document.getElementById('w-name').value.trim().toUpperCase(); let amt = parseInt(document.getElementById('w-amount').value);
+            if(!bank || !acc || !name || isNaN(amt)) return alert("Vui lòng nhập đầy đủ thông tin!"); if(amt < 50000) return alert("Số tiền rút tối thiểu là 50.000 VNĐ!"); if(amt > globalProfit) return alert("Số dư lợi nhuận không đủ!");
             if(!confirm(`Xác nhận rút ${amt.toLocaleString('vi-VN')} VNĐ về ${bank} - ${acc}?`)) return;
-
-            let exactTime = new Date().toLocaleString('vi-VN');
-            let newTrans = [...globalTransactions];
-            newTrans.unshift({ time: exactTime, amount: -amt, note: "Đặt lệnh rút tiền" });
-
-            db.collection("users").doc(globalUid).update({
-                profit: globalProfit - amt,
-                transactions: newTrans
-            }).then(() => {
-                db.collection("withdrawals").add({ uid: globalUid, username: globalUsername, bankId: bank, accountNo: acc, accountName: name, amount: amt, status: "Chờ duyệt", time: exactTime, rawTime: Date.now() });
-                alert("✅ Đã gửi lệnh rút tiền thành công! Hệ thống đang xử lý...");
-                document.getElementById('withdraw-modal').style.display = 'none';
-                document.getElementById('w-bank').value = ''; document.getElementById('w-acc').value = ''; document.getElementById('w-name').value = ''; document.getElementById('w-amount').value = '';
-            }).catch(e => alert("Lỗi khi xử lý: " + e.message));
+            let exactTime = new Date().toLocaleString('vi-VN'); let newTrans = [...globalTransactions]; newTrans.unshift({ time: exactTime, amount: -amt, note: "Đặt lệnh rút tiền" });
+            db.collection("users").doc(globalUid).update({ profit: globalProfit - amt, transactions: newTrans }).then(() => { db.collection("withdrawals").add({ uid: globalUid, username: globalUsername, bankId: bank, accountNo: acc, accountName: name, amount: amt, status: "Chờ duyệt", time: exactTime, rawTime: Date.now() }); alert("✅ Đã gửi lệnh rút tiền thành công! Hệ thống đang xử lý..."); document.getElementById('withdraw-modal').style.display = 'none'; document.getElementById('w-bank').value = ''; document.getElementById('w-acc').value = ''; document.getElementById('w-name').value = ''; document.getElementById('w-amount').value = ''; }).catch(e => alert("Lỗi khi xử lý: " + e.message));
         }
 
         window.copyCode = () => { const inviteLink = window.location.origin + "/dang-ky.html?ref=" + myDepositCode; navigator.clipboard.writeText(inviteLink).then(() => alert("Đã sao chép link mời: \n" + inviteLink)); };
@@ -482,18 +437,10 @@
                 let totalComm = 0; let totalMembers = 0; let htmlList = '';
                 const snapF1 = await db.collection("users").where("referredBy", "==", myDepositCode).get(); let f1Codes = [];
                 snapF1.forEach(doc => { let u = doc.data(); let dep = getDeposit(u); let comm = dep * 0.30; totalComm += comm; totalMembers++; f1Codes.push(u.depositCode); htmlList += renderF1Row(u.username, u.depositCode, 'F1', dep, comm); });
-
-                let f2Codes = [];
-                if(f1Codes.length > 0) { for(let i=0; i<f1Codes.length; i+=10) { let chunk = f1Codes.slice(i, i+10); let snapF2 = await db.collection("users").where("referredBy", "in", chunk).get(); snapF2.forEach(doc => { let u = doc.data(); let dep = getDeposit(u); let comm = dep * 0.03; totalComm += comm; totalMembers++; f2Codes.push(u.depositCode); htmlList += renderF1Row(u.username, u.depositCode, 'F2', dep, comm); }); } }
-
+                let f2Codes = []; if(f1Codes.length > 0) { for(let i=0; i<f1Codes.length; i+=10) { let chunk = f1Codes.slice(i, i+10); let snapF2 = await db.collection("users").where("referredBy", "in", chunk).get(); snapF2.forEach(doc => { let u = doc.data(); let dep = getDeposit(u); let comm = dep * 0.03; totalComm += comm; totalMembers++; f2Codes.push(u.depositCode); htmlList += renderF1Row(u.username, u.depositCode, 'F2', dep, comm); }); } }
                 if(f2Codes.length > 0) { for(let i=0; i<f2Codes.length; i+=10) { let chunk = f2Codes.slice(i, i+10); let snapF3 = await db.collection("users").where("referredBy", "in", chunk).get(); snapF3.forEach(doc => { let u = doc.data(); let dep = getDeposit(u); let comm = dep * 0.01; totalComm += comm; totalMembers++; htmlList += renderF1Row(u.username, u.depositCode, 'F3', dep, comm); }); } }
-
-                document.getElementById('total-f1-count').innerText = totalMembers; document.getElementById('total-commission').innerText = totalComm.toLocaleString() + " VNĐ";
-                availableCommission = totalComm - globalClaimedCommission; if(availableCommission < 0) availableCommission = 0;
-                document.getElementById('available-commission').innerText = availableCommission.toLocaleString() + " VNĐ";
-                
-                const btnClaim = document.getElementById('btn-claim-comm');
-                if(availableCommission <= 0) { btnClaim.disabled = true; btnClaim.innerText = "Chưa có hoa hồng mới"; } else { btnClaim.disabled = false; btnClaim.innerText = "💰 Chuyển vào số dư Rút tiền"; }
+                document.getElementById('total-f1-count').innerText = totalMembers; document.getElementById('total-commission').innerText = totalComm.toLocaleString() + " VNĐ"; availableCommission = totalComm - globalClaimedCommission; if(availableCommission < 0) availableCommission = 0; document.getElementById('available-commission').innerText = availableCommission.toLocaleString() + " VNĐ";
+                const btnClaim = document.getElementById('btn-claim-comm'); if(availableCommission <= 0) { btnClaim.disabled = true; btnClaim.innerText = "Chưa có hoa hồng mới"; } else { btnClaim.disabled = false; btnClaim.innerText = "💰 Chuyển vào số dư Rút tiền"; }
                 document.getElementById('f1-list-container').innerHTML = htmlList || '<div style="text-align:center; padding: 30px; border: 1px dashed #333; border-radius:12px; color:#666;">Bạn chưa mời được ai. Hãy chia sẻ link ngay!</div>';
             } catch(e) { console.log(e); }
         }
@@ -501,15 +448,9 @@
         window.claimCommission = () => {
             if(availableCommission <= 0) return; if(!confirm(`Xác nhận rút ${availableCommission.toLocaleString()} VNĐ hoa hồng?`)) return;
             let btn = document.getElementById('btn-claim-comm'); btn.disabled = true; btn.innerText = "Đang xử lý...";
-            let exactTime = new Date().toLocaleString('vi-VN');
-            let newTrans = [...globalTransactions];
-            newTrans.unshift({ time: exactTime, amount: availableCommission, note: "Nhận hoa hồng hệ thống" });
-
-            db.collection("users").doc(globalUid).update({ profit: globalProfit + availableCommission, claimedCommission: globalClaimedCommission + availableCommission, transactions: newTrans })
-            .then(() => { alert("✅ Đã cộng hoa hồng vào Số dư khả dụng thành công!"); loadTeamData(); })
-            .catch(e => { alert("Lỗi rút hoa hồng: " + e.message); btn.disabled = false; btn.innerText = "Thử lại"; });
+            let exactTime = new Date().toLocaleString('vi-VN'); let newTrans = [...globalTransactions]; newTrans.unshift({ time: exactTime, amount: availableCommission, note: "Nhận hoa hồng hệ thống" });
+            db.collection("users").doc(globalUid).update({ profit: globalProfit + availableCommission, claimedCommission: globalClaimedCommission + availableCommission, transactions: newTrans }).then(() => { alert("✅ Đã cộng hoa hồng vào Số dư khả dụng thành công!"); loadTeamData(); }).catch(e => { alert("Lỗi rút hoa hồng: " + e.message); btn.disabled = false; btn.innerText = "Thử lại"; });
         }
-
         document.getElementById('btn-logout').onclick = () => { if(confirm("Bạn muốn rời khỏi Căn Cứ?")) auth.signOut(); };
     </script>
 </body>
