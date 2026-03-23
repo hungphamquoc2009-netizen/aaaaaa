@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng Ký - GARENA PRO</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: #050505; color: #fff; display: flex; align-items: center; justify-content: center; height: 100vh; }
+        .auth-box { background: #111; padding: 40px; border-radius: 20px; width: 400px; border-top: 5px solid #eb0029; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .auth-box h2 { text-align: center; font-size: 28px; margin-bottom: 25px; font-style: italic; }
+        .auth-box h2 span { color: #eb0029; }
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; font-size: 12px; color: #888; margin-bottom: 5px; font-weight: bold; }
+        .input-group input { width: 100%; padding: 14px; background: #222; border: 1px solid #333; border-radius: 8px; color: #fff; outline: none; transition: 0.3s; }
+        .input-group input:focus { border-color: #eb0029; }
+        
+        /* Cấu hình ô nhập mã bị khóa */
+        input[readonly] { background: #1a1a1a; color: #555; cursor: not-allowed; border-color: #222; }
+
+        .btn-submit { width: 100%; padding: 15px; background: #eb0029; color: #fff; border: none; border-radius: 8px; font-weight: 900; font-size: 16px; cursor: pointer; margin-top: 10px; transition: 0.3s; }
+        .btn-submit:hover { box-shadow: 0 0 15px rgba(235,0,41,0.5); }
+        .link-bot { text-align: center; margin-top: 20px; font-size: 13px; color: #888; }
+        .link-bot a { color: #eb0029; text-decoration: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="auth-box">
+        <h2>GARENA <span>PRO</span></h2>
+        
+        <div class="input-group">
+            <label>Họ và Tên</label>
+            <input type="text" id="reg-name" placeholder="VD: NGUYEN VAN A">
+        </div>
+        <div class="input-group">
+            <label>Email Đăng Nhập</label>
+            <input type="email" id="reg-email" placeholder="VD: taikhoan@gmail.com">
+        </div>
+        <div class="input-group">
+            <label>Mật Khẩu</label>
+            <input type="password" id="reg-pass" placeholder="••••••••">
+        </div>
+        <div class="input-group">
+            <label>Mã Giới Thiệu (Nhận hoa hồng Đội nhóm)</label>
+            <input type="text" id="reg-ref" placeholder="Bỏ trống nếu không có">
+        </div>
+
+        <button class="btn-submit" id="btn-reg" onclick="registerUser()">ĐĂNG KÝ TÀI KHOẢN</button>
+        <div class="link-bot">Đã có tài khoản? <a href="dang-nhap.html">Đăng nhập ngay</a></div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyClgn4G01Z9pqAqIj3-NwJ8a0tS1l4AAZU",
+            authDomain: "garenabusiness-c3609.firebaseapp.com",
+            projectId: "garenabusiness-c3609",
+            storageBucket: "garenabusiness-c3609.firebasestorage.app",
+            messagingSenderId: "1030376090857",
+            appId: "1:1030376090857:web:bc9cf645e6216007d7d478"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // LOGIC LẤY MÃ MỜI TỪ LINK VÀ KHÓA Ô NHẬP
+        window.onload = () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const refCode = urlParams.get('ref'); // Lấy chữ sau ?ref=
+            
+            if (refCode) {
+                const refInput = document.getElementById('reg-ref');
+                refInput.value = refCode; // Điền vào ô
+                refInput.readOnly = true; // KHÓA CỨNG không cho người dùng sửa
+            }
+        };
+
+        // LOGIC ĐĂNG KÝ VÀ TẠO DATA
+        function registerUser() {
+            const name = document.getElementById('reg-name').value.trim();
+            const email = document.getElementById('reg-email').value.trim();
+            const pass = document.getElementById('reg-pass').value.trim();
+            const refCode = document.getElementById('reg-ref').value.trim(); // Mã người giới thiệu
+
+            if(!name || !email || !pass) return alert("Vui lòng điền đủ Tên, Email và Mật khẩu!");
+
+            const btn = document.getElementById('btn-reg');
+            btn.disabled = true; btn.innerText = "ĐANG TẠO...";
+
+            auth.createUserWithEmailAndPassword(email, pass).then((userCredential) => {
+                const user = userCredential.user;
+                // Tạo một mã nạp ngẫu nhiên 6 số cho User mới này
+                const myCode = Math.floor(100000 + Math.random() * 900000).toString(); 
+
+                db.collection("users").doc(user.uid).set({
+                    username: name,
+                    email: email,
+                    depositCode: myCode, // Mã nạp của chính họ
+                    referredBy: refCode, // Ai là người mời họ? (Trống nếu ko có)
+                    profit: 0,
+                    claimedCommission: 0,
+                    investments: [],
+                    transactions: [],
+                    createdAt: new Date().toLocaleString('vi-VN')
+                }).then(() => {
+                    alert("✅ Đăng ký thành công! Đang chuyển vào Căn Cứ...");
+                    window.location.href = "dashboard.html"; // Vào thẳng Dashboard
+                });
+            }).catch((error) => {
+                alert("Lỗi: " + error.message);
+                btn.disabled = false; btn.innerText = "ĐĂNG KÝ TÀI KHOẢN";
+            });
+        }
+    </script>
+</body>
+</html>
