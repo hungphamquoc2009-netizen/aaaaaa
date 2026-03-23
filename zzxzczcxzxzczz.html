@@ -73,9 +73,9 @@
     <div class="login-box">
         <h2>INVEST PRO ULTRA</h2>
         <p>Hệ Thống Quản Trị Cấp Cao</p>
-        <label>Tài khoản Email Admin</label>
-        <input type="email" id="admin-email" placeholder="">
-        <label>Mật khẩu Admin</label>
+        <label>Tài khoản</label>
+        <input type="text" id="admin-user" placeholder="Nhập tài khoản...">
+        <label>Mật khẩu</label>
         <input type="password" id="admin-pass" placeholder="••••••••" onkeypress="if(event.key === 'Enter') loginAdmin()">
         <button id="btn-login" onclick="loginAdmin()">Đăng Nhập Hệ Thống</button>
     </div>
@@ -251,19 +251,26 @@
 
     let allUsersData = {}; let allPackages = {}; let currentViewingUid = ""; 
 
-    // --- BẢO MẬT: ĐĂNG NHẬP BẰNG FIREBASE AUTH ---
+    // --- BẢO MẬT: XỬ LÝ ĐĂNG NHẬP THÔNG MINH ---
     function loginAdmin() {
-        const email = document.getElementById("admin-email").value.trim();
+        const user = document.getElementById("admin-user").value.trim();
         const pass = document.getElementById("admin-pass").value.trim();
         
-        if(!email || !pass) return alert("Vui lòng điền đủ Email và Mật khẩu!");
+        if(!user || !pass) return alert("Vui lòng điền đủ thông tin!");
         
         const btn = document.getElementById("btn-login");
-        btn.innerText = "ĐANG XÁC THỰC...";
+        btn.innerText = "ĐANG XÁC THỰC BẢO MẬT...";
+        
+        // Tự động chuyển đổi tài khoản thành định dạng Email cho Firebase
+        let email = user;
+        if(user === "admin12") email = "admin12@garena.com";
         
         auth.signInWithEmailAndPassword(email, pass).catch(e => {
-            alert("❌ Tài khoản hoặc mật khẩu không chính xác!");
-            btn.innerText = "ĐĂNG NHẬP HỆ THỐNG";
+            // Nếu đăng nhập thất bại (Tài khoản chưa tồn tại), TỰ ĐỘNG tạo luôn!
+            auth.createUserWithEmailAndPassword(email, pass).catch(err => {
+                alert("❌ Tài khoản hoặc Mật khẩu không chính xác!");
+                btn.innerText = "ĐĂNG NHẬP HỆ THỐNG";
+            });
         });
     }
 
@@ -275,7 +282,8 @@
 
     let systemStarted = false;
     auth.onAuthStateChanged(user => {
-        if(user) {
+        // Chỉ chấp nhận nếu đúng là tài khoản Admin
+        if(user && user.email === "admin12@garena.com") {
             document.getElementById("admin-login-screen").style.display = "none";
             document.getElementById("admin-layout").style.display = "flex";
             if(!systemStarted) {
@@ -432,6 +440,7 @@
     };
 
     window.deleteProduct = (code) => { if(confirm(`Bạn có chắc muốn xóa gói [${code}]?`)) db.collection("packages").doc(code).delete(); }
+    
 </script>
 </body>
 </html>
