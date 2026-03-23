@@ -10,10 +10,11 @@
         body { font-family: 'Inter', sans-serif; margin: 0; background: #f4f6f9; color: #333; height: 100vh; overflow: hidden; }
         
         #admin-login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a2226; display: flex; justify-content: center; align-items: center; z-index: 99999; flex-direction: column; }
-        .login-box { background: #222d32; padding: 40px; border-radius: 16px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.5); width: 320px; border: 1px solid #2c3b41; }
+        .login-box { background: #222d32; padding: 40px; border-radius: 16px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.5); width: 340px; border: 1px solid #2c3b41; }
         .login-box h2 { margin: 0; color: var(--success); font-size: 24px; letter-spacing: 1px; }
         .login-box p { color: #888; font-size: 13px; margin: 5px 0 25px 0; }
-        .login-box input { width: 100%; padding: 15px; margin-bottom: 20px; border: 1px solid #333; border-radius: 8px; box-sizing: border-box; font-size: 15px; background: #1a2226; color: white; outline: none; transition: 0.3s; text-align: center; letter-spacing: 2px; }
+        .login-box label { display: block; text-align: left; color: #aaa; font-size: 12px; margin-bottom: 5px; font-weight: bold;}
+        .login-box input { width: 100%; padding: 15px; margin-bottom: 20px; border: 1px solid #333; border-radius: 8px; box-sizing: border-box; font-size: 15px; background: #1a2226; color: white; outline: none; transition: 0.3s; letter-spacing: 1px; }
         .login-box input:focus { border-color: var(--success); box-shadow: 0 0 10px rgba(46, 204, 113, 0.2); }
         .login-box button { width: 100%; padding: 15px; background: var(--success); color: white; border: none; border-radius: 8px; font-weight: 900; font-size: 15px; cursor: pointer; transition: 0.3s; text-transform: uppercase; }
         .login-box button:hover { background: #27ae60; transform: translateY(-2px); }
@@ -72,8 +73,11 @@
     <div class="login-box">
         <h2>INVEST PRO ULTRA</h2>
         <p>Hệ Thống Quản Trị Cấp Cao</p>
-        <input type="password" id="admin-pass-input" placeholder="Mật khẩu: AdminPro@999" onkeypress="if(event.key === 'Enter') verifyAdmin()">
-        <button onclick="verifyAdmin()">Đăng Nhập Quản Trị</button>
+        <label>Tài khoản Email Admin</label>
+        <input type="email" id="admin-email" placeholder="">
+        <label>Mật khẩu Admin</label>
+        <input type="password" id="admin-pass" placeholder="••••••••" onkeypress="if(event.key === 'Enter') loginAdmin()">
+        <button id="btn-login" onclick="loginAdmin()">Đăng Nhập Hệ Thống</button>
     </div>
 </div>
 
@@ -229,6 +233,7 @@
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
 <script>
@@ -241,13 +246,49 @@
         appId: "1:1030376090857:web:bc9cf645e6216007d7d478"
     };
     firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
     const db = firebase.firestore();
 
-    const ADMIN_PASS = "AdminPro@999"; 
     let allUsersData = {}; let allPackages = {}; let currentViewingUid = ""; 
 
-    function verifyAdmin() { if (document.getElementById("admin-pass-input").value === ADMIN_PASS) { sessionStorage.setItem("adminLog", "true"); document.getElementById("admin-login-screen").style.display = "none"; document.getElementById("admin-layout").style.display = "flex"; startAdminSystem(); } else { alert("❌ Mật khẩu không chính xác!"); document.getElementById("admin-pass-input").value = ''; } }
-    function logoutAdmin() { sessionStorage.removeItem("adminLog"); window.location.reload(); }
+    // --- BẢO MẬT: ĐĂNG NHẬP BẰNG FIREBASE AUTH ---
+    function loginAdmin() {
+        const email = document.getElementById("admin-email").value.trim();
+        const pass = document.getElementById("admin-pass").value.trim();
+        
+        if(!email || !pass) return alert("Vui lòng điền đủ Email và Mật khẩu!");
+        
+        const btn = document.getElementById("btn-login");
+        btn.innerText = "ĐANG XÁC THỰC...";
+        
+        auth.signInWithEmailAndPassword(email, pass).catch(e => {
+            alert("❌ Tài khoản hoặc mật khẩu không chính xác!");
+            btn.innerText = "ĐĂNG NHẬP HỆ THỐNG";
+        });
+    }
+
+    function logoutAdmin() { 
+        if(confirm("Xác nhận đăng xuất khỏi hệ thống quản trị?")) {
+            auth.signOut().then(() => window.location.reload());
+        }
+    }
+
+    let systemStarted = false;
+    auth.onAuthStateChanged(user => {
+        if(user) {
+            document.getElementById("admin-login-screen").style.display = "none";
+            document.getElementById("admin-layout").style.display = "flex";
+            if(!systemStarted) {
+                startAdminSystem();
+                systemStarted = true;
+            }
+        } else {
+            document.getElementById("admin-login-screen").style.display = "flex";
+            document.getElementById("admin-layout").style.display = "none";
+            systemStarted = false;
+        }
+    });
+
     function showTab(id, el) { document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active')); el.classList.add('active'); }
     function filterTable(tableId, query) { const rows = document.getElementById(tableId).getElementsByTagName('tr'); const q = query.toLowerCase(); for (let row of rows) { row.style.display = row.innerText.toLowerCase().includes(q) ? '' : 'none'; } }
     function parseDateStr(str) { try { let clean = str.replace(/-/g, '').replace(/,/g, '').trim(); let parts = clean.split(' '); let timeStr = parts[0].includes(':') ? parts[0] : parts[1]; let dateStr = parts[0].includes('/') ? parts[0] : parts[1]; const [h, m, s] = timeStr.split(':'); const [D, M, Y] = dateStr.split('/'); return new Date(Y, M - 1, D, h, m, s).getTime(); } catch(e) { return 0; } }
@@ -276,9 +317,8 @@
                 if(u.transactions) {
                     u.transactions.forEach(tx => {
                         let isAdd = tx.amount > 0;
-                        let noteText = tx.note || "";
-                        // THUẬT TOÁN: Ẩn các giao dịch tự động của khách, chỉ hiện thao tác của Admin
-                        if(!noteText.includes("Tân thủ") && !noteText.includes("rút tiền") && !noteText.includes("hoa hồng")) {
+                        let noteText = (tx.note || "").toLowerCase();
+                        if(!noteText.includes("tân thủ") && !noteText.includes("rút tiền") && !noteText.includes("hoa hồng")) {
                             sysHistory.push({ time: tx.time, username: u.username, type: isAdd ? "Cộng Tiền" : "Trừ Tiền", detail: tx.note, amount: `<span style="color:${isAdd ? 'var(--success)' : 'var(--danger)'}; font-weight:bold">${isAdd ? '+' : ''}${tx.amount.toLocaleString()} ₫</span>`, rawTime: parseDateStr(tx.time) });
                         }
                     });
@@ -293,7 +333,7 @@
             document.getElementById('deposit-hist-table').innerHTML = depositHistory.map(h => `<tr><td>${h.time}</td><td><b>${h.username}</b></td><td><span class="badge" style="background:#e8f8f5; color:#2ecc71">Thành công</span></td><td>${h.packageName}</td><td style="color:var(--success); font-weight:bold; font-size:14px;">+${h.amount.toLocaleString()} ₫</td></tr>`).join('') || '<tr><td colspan="5" style="text-align:center; padding:20px; color:#888;">Chưa có dữ liệu nạp.</td></tr>';
 
             sysHistory.sort((a, b) => b.rawTime - a.rawTime);
-            document.getElementById('sys-history-table').innerHTML = sysHistory.map(h => `<tr><td>${h.time}</td><td><b>${h.username}</b></td><td><span class="badge" style="background:#eef2ff; color:var(--primary)">${h.type}</span></td><td>${h.detail}</td><td style="font-size:14px;">${h.amount}</td></tr>`).join('');
+            document.getElementById('sys-history-table').innerHTML = sysHistory.map(h => `<tr><td>${h.time}</td><td><b>${h.username}</b></td><td><span class="badge" style="background:#eef2ff; color:var(--primary)">${h.type}</span></td><td>${h.detail}</td><td style="font-size:14px;">${h.amount}</td></tr>`).join('') || '<tr><td colspan="5" style="text-align:center; padding:20px; color:#888;">Chưa có lịch sử Admin cộng/trừ.</td></tr>';
             if(currentViewingUid && document.getElementById('user-modal').style.display === 'flex') renderUserModalData(currentViewingUid);
         });
 
@@ -392,7 +432,6 @@
     };
 
     window.deleteProduct = (code) => { if(confirm(`Bạn có chắc muốn xóa gói [${code}]?`)) db.collection("packages").doc(code).delete(); }
-    window.onload = () => { if (sessionStorage.getItem("adminLog") === "true") { document.getElementById("admin-login-screen").style.display = "none"; document.getElementById("admin-layout").style.display = "flex"; startAdminSystem(); } else { document.getElementById("admin-pass-input").focus(); } };
 </script>
 </body>
 </html>
