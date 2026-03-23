@@ -108,9 +108,7 @@
         <div class="sidebar-header">INVEST PRO ADMIN</div>
         <div class="menu-item active" onclick="showTab('tab-overview', this)">📊 Thống kê & Cấu hình</div>
         <div class="menu-item" onclick="showTab('tab-users', this)">👥 Quản lý Tuyển thủ</div>
-        
         <div class="menu-item" onclick="showTab('tab-deposit-hist', this)">📥 Lịch sử Nạp Tiền</div>
-
         <div class="menu-item" onclick="showTab('tab-withdraw', this)">🏧 Duyệt Rút Tiền</div>
         <div class="menu-item" onclick="showTab('tab-withdraw-hist', this)">🗂️ Lịch sử Rút Tiền</div>
         <div class="menu-item" onclick="showTab('tab-sys-history', this)">📝 Lịch sử Admin ± Tiền</div>
@@ -260,7 +258,7 @@
         db.collection("users").onSnapshot((snap) => {
             let userHtml = ''; let totalUsers=0, totalInvested=0, totalProfit=0;
             let sysHistory = []; 
-            let depositHistory = []; // THÊM MẢNG CHỨA LỊCH SỬ NẠP
+            let depositHistory = []; 
             
             snap.forEach(docSnap => {
                 const u = docSnap.data(); const uid = docSnap.id; allUsersData[uid] = u;
@@ -270,7 +268,6 @@
                 if(u.investments) { 
                     u.investments.forEach(item => { 
                         userInvested += item.amount; 
-                        // ĐƯA VÀO MẢNG LỊCH SỬ NẠP
                         depositHistory.push({ time: item.date, username: u.username, packageName: item.name, amount: item.amount, rawTime: parseDateStr(item.date) });
                     }); 
                 }
@@ -279,7 +276,9 @@
                 if(u.transactions) {
                     u.transactions.forEach(tx => {
                         let isAdd = tx.amount > 0;
-                        if(tx.note.includes("Admin") || tx.note.includes("hệ thống") || tx.note.includes("Tặng")) {
+                        let noteText = tx.note || "";
+                        // THUẬT TOÁN: Ẩn các giao dịch tự động của khách, chỉ hiện thao tác của Admin
+                        if(!noteText.includes("Tân thủ") && !noteText.includes("rút tiền") && !noteText.includes("hoa hồng")) {
                             sysHistory.push({ time: tx.time, username: u.username, type: isAdd ? "Cộng Tiền" : "Trừ Tiền", detail: tx.note, amount: `<span style="color:${isAdd ? 'var(--success)' : 'var(--danger)'}; font-weight:bold">${isAdd ? '+' : ''}${tx.amount.toLocaleString()} ₫</span>`, rawTime: parseDateStr(tx.time) });
                         }
                     });
@@ -290,7 +289,6 @@
             document.getElementById('user-table').innerHTML = userHtml;
             document.getElementById('stat-total-users').innerText = totalUsers; document.getElementById('stat-total-invested').innerText = totalInvested.toLocaleString() + " ₫"; document.getElementById('stat-total-profit').innerText = totalProfit.toLocaleString() + " ₫";
 
-            // RENDER LỊCH SỬ NẠP TIỀN
             depositHistory.sort((a, b) => b.rawTime - a.rawTime);
             document.getElementById('deposit-hist-table').innerHTML = depositHistory.map(h => `<tr><td>${h.time}</td><td><b>${h.username}</b></td><td><span class="badge" style="background:#e8f8f5; color:#2ecc71">Thành công</span></td><td>${h.packageName}</td><td style="color:var(--success); font-weight:bold; font-size:14px;">+${h.amount.toLocaleString()} ₫</td></tr>`).join('') || '<tr><td colspan="5" style="text-align:center; padding:20px; color:#888;">Chưa có dữ liệu nạp.</td></tr>';
 
