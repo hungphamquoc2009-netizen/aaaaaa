@@ -49,8 +49,11 @@
         .product-card { background: var(--card-bg); border: 1px solid #333; border-radius: 16px; padding: 20px; transition: var(--transition); display: flex; flex-direction: column; gap: 15px;}
         .product-card:hover { border-color: var(--garena-red); transform: translateY(-5px); box-shadow: var(--neon-glow); }
         .pc-header { display: flex; justify-content: space-between; align-items: center; }
-        .pc-title { font-size: 18px; font-weight: 900; color: #fff; text-transform: uppercase; display: flex; align-items: center; gap: 10px;}
-        .pc-badge { font-size: 11px; font-weight: 800; padding: 5px 12px; border-radius: 20px; background: rgba(255,215,0,0.1); color: #ffd700; border: 1px solid #ffd700;}
+        .pc-title { font-size: 16px; font-weight: 900; color: #fff; text-transform: uppercase; display: flex; align-items: center; gap: 10px;}
+        
+        /* Bỏ CSS cứng để dùng style động từ JS */
+        .pc-badge { font-size: 10px; font-weight: 800; padding: 5px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px;}
+        
         .pc-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-gray); border-bottom: 1px dashed #222; padding-bottom: 8px;}
         .pc-row strong { color: #fff; font-size: 14px; }
         .pc-estimate { background: #1a1a1a; padding: 15px; border-radius: 12px; border: 1px solid #222; }
@@ -311,16 +314,22 @@
             }
         });
 
-        // TẢI SẢN PHẨM KHÔNG ICON & AN TOÀN ONCLICK
+        // 1. TẢI SẢN PHẨM & SẮP XẾP THEO GIÁ
         db.collection("packages").onSnapshot((snapshot) => {
-            const storeBox = document.getElementById('dynamic-store'); storeBox.innerHTML = ""; 
-            if (snapshot.empty) return storeBox.innerHTML = "<div style='grid-column: 1/-1; text-align: center; color: #888;'>Cửa hàng đang bảo trì...</div>";
+            let pArr = [];
+            snapshot.forEach((doc) => { pArr.push(doc.data()); });
+            
+            // Sắp xếp tự động giá trị từ thấp lên cao
+            pArr.sort((a, b) => a.price - b.price);
 
-            snapshot.forEach((doc) => {
-                const p = doc.data();
+            const storeBox = document.getElementById('dynamic-store'); storeBox.innerHTML = ""; 
+            if (pArr.length === 0) return storeBox.innerHTML = "<div style='grid-column: 1/-1; text-align: center; color: #888;'>Cửa hàng đang bảo trì...</div>";
+
+            pArr.forEach((p) => {
                 let rate = p.profit || 30; let dailyProfit = (p.price * rate) / 100;
                 
-                // Thuật toán chống lỗi nháy đơn (') trong tên Quỹ làm gãy nút click
+                // 2. ĐỒNG BỘ MÀU TAG VỚI TRANG ADMIN
+                let badgeColor = p.badge === 'HOT' ? '#e74c3c' : (p.badge === 'Mới ra mắt' ? '#3498db' : '#f39c12');
                 let safeName = p.name ? p.name.replace(/'/g, "\\'") : "Gói Đầu Tư";
                 let pCode = p.code || p.id || "PKG";
                 
@@ -328,7 +337,7 @@
                     <div class="product-card">
                         <div class="pc-header">
                             <div class="pc-title">📦 ${p.name}</div>
-                            <div class="pc-badge">${p.badge || 'Phổ Biến'}</div>
+                            <div class="pc-badge" style="background:${badgeColor}22; color:${badgeColor}; border: 1px solid ${badgeColor};">${p.badge || 'Phổ Biến'}</div>
                         </div>
                         <div>
                             <div class="pc-row"><span>Giá vốn đầu tư</span><strong>${Number(p.price).toLocaleString('vi-VN')} đ</strong></div>
@@ -344,7 +353,6 @@
             });
         });
 
-        // XỬ LÝ MỞ BẢNG THANH TOÁN MƯỢT MÀ
         window.openPayment = function(pkgCode, price, pkgName) {
             let userCode = myDepositCode || "KHACH";
             document.getElementById('modal-title').innerText = "Thanh toán " + pkgName;
