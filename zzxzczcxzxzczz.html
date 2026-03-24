@@ -130,9 +130,22 @@
     <div class="main">
         <div id="tab-overview" class="tab-page active">
             <div class="stats-grid">
-                <div class="stat-card"><h4>Tổng Số Tuyển Thủ</h4><div id="stat-total-users">0</div></div>
-                <div class="stat-card" style="border-bottom-color: var(--success);"><h4>Tổng Vốn Đã Nạp</h4><div id="stat-total-invested" style="color:var(--success)">0 ₫</div></div>
-                <div class="stat-card" style="border-bottom-color: var(--warning);"><h4>Tổng Số Dư Hiện Tại</h4><div id="stat-total-profit" style="color:var(--warning)">0 ₫</div></div>
+                <div class="stat-card">
+                    <h4>Tổng Số Tuyển Thủ</h4>
+                    <div id="stat-total-users">0</div>
+                </div>
+                <div class="stat-card" style="border-bottom-color: var(--success);">
+                    <h4>Tổng Vốn Đã Nạp</h4>
+                    <div id="stat-total-invested" style="color:var(--success)">0 ₫</div>
+                </div>
+                <div class="stat-card" style="border-bottom-color: var(--danger);">
+                    <h4>Tổng Tiền Đã Rút</h4>
+                    <div id="stat-total-withdrawn" style="color:var(--danger)">0 ₫</div>
+                </div>
+                <div class="stat-card" style="border-bottom-color: var(--primary);">
+                    <h4>Doanh Thu (Nạp - Rút)</h4>
+                    <div id="stat-net-revenue" style="color:var(--primary)">0 ₫</div>
+                </div>
             </div>
             <div class="card" style="border-top: 4px solid var(--warning);">
                 <h3>📢 Cài Đặt Thông Báo Popup & CSKH</h3>
@@ -257,6 +270,17 @@
     const db = firebase.firestore();
 
     let allUsersData = {}; let allPackages = {}; let currentViewingUid = ""; 
+    let globalTotalInvested = 0;
+    let globalTotalWithdrawn = 0;
+
+    function updateRevenueUI() {
+        let revenue = globalTotalInvested - globalTotalWithdrawn;
+        let revEl = document.getElementById('stat-net-revenue');
+        if(revEl) {
+            revEl.innerText = revenue.toLocaleString() + " ₫";
+            revEl.style.color = revenue >= 0 ? "var(--primary)" : "var(--danger)";
+        }
+    }
 
     // --- BẢO MẬT: XỬ LÝ ĐĂNG NHẬP THÔNG MINH ---
     function loginAdmin() {
@@ -312,13 +336,13 @@
         db.collection("config").doc("system").onSnapshot(doc => { if(doc.exists) { let d = doc.data(); document.getElementById('cfg-notice').value = d.noticeContent || ""; document.getElementById('cfg-cskh').value = d.cskh || ""; document.getElementById('cfg-group').value = d.link || ""; } });
 
         db.collection("users").onSnapshot((snap) => {
-            let userHtml = ''; let totalUsers=0, totalInvested=0, totalProfit=0;
+            let userHtml = ''; let totalUsers=0, totalInvested=0;
             let sysHistory = []; 
             let depositHistory = []; 
             
             snap.forEach(docSnap => {
                 const u = docSnap.data(); const uid = docSnap.id; allUsersData[uid] = u;
-                totalUsers++; totalProfit += (u.profit || 0);
+                totalUsers++;
 
                 let userInvested = 0;
                 if(u.investments) { 
@@ -342,7 +366,11 @@
                 userHtml += `<tr><td><b>${u.username}</b><br><span class="code-hl">${u.depositCode || "N/A"}</span></td><td style="color:var(--success); font-weight:bold">${userInvested.toLocaleString()} ₫</td><td style="color:var(--warning); font-weight:bold">${(u.profit||0).toLocaleString()} ₫</td><td><button class="btn btn-info" onclick="openUserModal('${uid}')">👁️ Hồ Sơ</button></td></tr>`;
             });
             document.getElementById('user-table').innerHTML = userHtml;
-            document.getElementById('stat-total-users').innerText = totalUsers; document.getElementById('stat-total-invested').innerText = totalInvested.toLocaleString() + " ₫"; document.getElementById('stat-total-profit').innerText = totalProfit.toLocaleString() + " ₫";
+            document.getElementById('stat-total-users').innerText = totalUsers; 
+            document.getElementById('stat-total-invested').innerText = totalInvested.toLocaleString() + " ₫"; 
+            
+            globalTotalInvested = totalInvested;
+            updateRevenueUI();
 
             depositHistory.sort((a, b) => b.rawTime - a.rawTime);
             document.getElementById('deposit-hist-table').innerHTML = depositHistory.map(h => `<tr><td>${h.time}</td><td><b>${h.username}</b></td><td><span class="badge" style="background:#e8f8f5; color:#2ecc71">Thành công</span></td><td>${h.packageName}</td><td style="color:var(--success); font-weight:bold; font-size:14px;">+${h.amount.toLocaleString()} ₫</td></tr>`).join('') || '<tr><td colspan="5" style="text-align:center; padding:20px; color:#888;">Chưa có dữ liệu nạp.</td></tr>';
@@ -356,6 +384,17 @@
             let pending = [], history = [];
             snap.forEach(docSnap => { let data = docSnap.data(); data.id = docSnap.id; if (data.status === "Chờ duyệt") pending.push(data); else history.push(data); });
             pending.sort((a,b) => b.rawTime - a.rawTime); history.sort((a,b) => b.rawTime - a.rawTime);
+
+            let totalWithdrawn = 0;
+            history.forEach(w => {
+                if (w.status === 'Thành công') {
+                    totalWithdrawn += Number(w.amount) || 0;
+                }
+            });
+            globalTotalWithdrawn = totalWithdrawn;
+            let twEl = document.getElementById('stat-total-withdrawn');
+            if(twEl) twEl.innerText = totalWithdrawn.toLocaleString() + " ₫";
+            updateRevenueUI();
 
             document.getElementById('pending-withdraw-table').innerHTML = pending.map(w => `<tr><td>${w.time}</td><td><b>${w.username}</b></td><td><div style="font-size:11px; color:var(--primary); font-weight:bold; background:#eef2ff; padding:5px; border-radius:5px;">${w.bankId} - ${w.accountNo}<br>${w.accountName}</div></td><td style="color:var(--danger); font-weight:bold; font-size:16px;">${w.amount.toLocaleString()} ₫</td><td><button class="btn btn-info" style="margin-bottom:5px; width:100%" onclick="showQR('${w.bankId}', '${w.accountNo}', '${w.accountName}', ${w.amount})">📱 QUÉT MÃ TRẢ KHÁCH</button><br><div style="display:flex; gap:5px;"><button class="btn btn-success" style="width:50%" onclick="handleWithdraw('${w.id}', 'Thành công', '${w.uid}', ${w.amount})">✔ Duyệt</button><button class="btn btn-danger" style="width:50%" onclick="handleWithdraw('${w.id}', 'Từ chối', '${w.uid}', ${w.amount})">✖ Từ chối</button></div></td></tr>`).join('') || '<tr><td colspan="5" style="text-align:center; color:#888;">Không có đơn rút tiền chờ duyệt.</td></tr>';
             document.getElementById('history-withdraw-table').innerHTML = history.map(w => `<tr><td>${w.time}</td><td><b>${w.username}</b></td><td><div style="font-size:11px; color:var(--primary); font-weight:bold">${w.bankId} - ${w.accountNo}</div></td><td style="color:var(--danger); font-weight:bold">${w.amount.toLocaleString()} ₫</td><td><span class="badge" style="background:${w.status === 'Thành công' ? '#e8f8f5; color:#2ecc71' : '#fdedec; color:#e74c3c'}">${w.status}</span></td></tr>`).join('') || '<tr><td colspan="5" style="text-align:center; color:#888;">Chưa có lịch sử xử lý.</td></tr>';
