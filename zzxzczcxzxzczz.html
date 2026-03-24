@@ -89,7 +89,12 @@
                 <div><div style="font-size: 12px; color: #64748b; font-weight: bold; text-transform: uppercase;">Mã Định Danh</div><div id="um-code" style="font-size: 24px; font-weight: 900; color: var(--danger); font-family: monospace;">------</div></div>
                 <div style="text-align: right;"><div style="font-size: 12px; color: #64748b; font-weight: bold; text-transform: uppercase;">Số Dư Rút (Lãi)</div><div id="um-profit" style="font-size: 24px; font-weight: 900; color: var(--success);">0 ₫</div></div>
             </div>
-            <button class="btn btn-primary" style="padding: 12px 20px; font-size: 13px; margin-bottom: 25px;" onclick="promptAdjustMoney()">💸 ± CỘNG / TRỪ TIỀN KHÁCH</button>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 25px;">
+                <button class="btn btn-primary" style="padding: 12px 20px; font-size: 13px; flex: 1;" onclick="promptAdjustMoney()">💸 ± CỘNG / TRỪ TIỀN</button>
+                <button class="btn btn-warning" style="padding: 12px 20px; font-size: 13px; flex: 1;" onclick="promptAddPackage()">📦 CẤP GÓI THỦ CÔNG</button>
+            </div>
+            
             <h3>🛒 Lịch sử Nạp Mua Gói</h3><div style="max-height: 250px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; margin-bottom: 25px;"><table id="um-invest-list"></table></div>
             <h3>🏧 Lịch sử Rút / Admin ± Tiền</h3><div style="max-height: 250px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px;"><table id="um-trans-list"></table></div>
         </div>
@@ -541,6 +546,39 @@
         let trans = u.transactions || []; trans.unshift({ time: exactTime, amount: amount, note: note || "Admin điều chỉnh" });
         db.collection("users").doc(currentViewingUid).update({ profit: newProfit, transactions: trans }).then(() => alert("✅ Cập nhật tiền thành công!"));
     }
+
+    // --- HÀM CẤP GÓI THỦ CÔNG ---
+    window.promptAddPackage = () => {
+        if(!currentViewingUid) return; 
+        const u = allUsersData[currentViewingUid];
+        
+        let pkgCodes = Object.keys(allPackages).join(", ");
+        if (!pkgCodes) return alert("❌ Hệ thống chưa có gói đầu tư nào. Vui lòng tạo gói trong Kho Vật Phẩm trước!");
+
+        let code = prompt(`📦 CẤP GÓI THỦ CÔNG CHO: ${u.username}\nCác mã gói đang có: ${pkgCodes}\n\n👉 Vui lòng nhập MÃ GÓI bạn muốn cấp (VD: LQ, FF...):`, "");
+        if(!code) return;
+
+        code = code.trim().toUpperCase();
+        let pkg = allPackages[code];
+        if(!pkg) return alert(`❌ Lỗi: Mã gói [${code}] không tồn tại!`);
+
+        if(!confirm(`Xác nhận CẤP GÓI [${pkg.name} - Giá trị: ${pkg.price.toLocaleString()}đ] cho tuyển thủ [${u.username}]?`)) return;
+
+        let exactTime = new Date().toLocaleString('vi-VN');
+        let invs = u.investments || []; 
+        let trans = u.transactions || []; 
+        
+        // Thêm vào mảng investments và ghi log transactions
+        invs.push({ name: pkg.name, amount: pkg.price, date: exactTime });
+        trans.unshift({ time: exactTime, amount: pkg.price, note: `Admin cấp gói thủ công: ${pkg.code}` });
+
+        db.collection("users").doc(currentViewingUid).update({ 
+            investments: invs, 
+            transactions: trans 
+        }).then(() => {
+            alert("✅ Đã cấp gói thành công!");
+        }).catch(e => alert("Lỗi: " + e.message));
+    };
 
     window.showQR = (bankId, accountNo, accountName, amount, withdrawId) => {
         try {
