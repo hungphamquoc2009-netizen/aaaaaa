@@ -177,7 +177,14 @@
                 <h3>👥 Danh sách Tuyển thủ tham gia</h3>
                 <input type="text" class="search-input search-container" id="search-users" placeholder="Tìm kiếm theo Tên..." onkeyup="filterTable('user-table', this.value)">
                 <table>
-                    <thead><tr><th>Tên / Mã Nạp</th><th>Tổng Nạp (Vốn)</th><th>Số Dư (Lãi)</th><th>Hành động</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>Tên / Mã Nạp</th>
+                            <th onclick="sortUserTableByCol(1)" style="cursor:pointer;" title="Nhấn để sắp xếp">Tổng Nạp (Vốn) <span id="sort-icon-1" style="font-size: 14px;">↕</span></th>
+                            <th onclick="sortUserTableByCol(2)" style="cursor:pointer;" title="Nhấn để sắp xếp">Số Dư (Lãi) <span id="sort-icon-2" style="font-size: 14px;">↕</span></th>
+                            <th>Hành động</th>
+                        </tr>
+                    </thead>
                     <tbody id="user-table"></tbody>
                 </table>
             </div>
@@ -646,7 +653,31 @@
     };
 
     window.deleteProduct = (code) => { if(confirm(`Bạn có chắc muốn xóa gói [${code}]?`)) db.collection("packages").doc(code).delete(); }
+
+    // --- CHỨC NĂNG SẮP XẾP BẢNG THÀNH VIÊN ---
+    let sortDirs = { 1: false, 2: false }; 
     
+    window.sortUserTableByCol = (colIndex) => {
+        const tbody = document.getElementById("user-table");
+        let rows = Array.from(tbody.querySelectorAll("tr"));
+        let isAsc = sortDirs[colIndex];
+
+        rows.sort((a, b) => {
+            let valA = parseFloat(a.cells[colIndex].innerText.replace(/[^0-9.-]+/g,"")) || 0;
+            let valB = parseFloat(b.cells[colIndex].innerText.replace(/[^0-9.-]+/g,"")) || 0;
+            
+            return isAsc ? (valA - valB) : (valB - valA);
+        });
+
+        sortDirs[colIndex] = !isAsc;
+        
+        tbody.innerHTML = "";
+        rows.forEach(row => tbody.appendChild(row));
+
+        document.getElementById("sort-icon-1").innerText = "↕";
+        document.getElementById("sort-icon-2").innerText = "↕";
+        document.getElementById("sort-icon-" + colIndex).innerText = isAsc ? "↑" : "↓";
+    };
 </script>
 </body>
 </html>
