@@ -195,7 +195,15 @@
                 <h3>📥 Lịch Sử Nạp Tiền (Khách Mua Gói)</h3>
                 <input type="text" class="search-input search-container" placeholder="Tìm kiếm giao dịch..." onkeyup="filterTable('deposit-hist-table', this.value)">
                 <table>
-                    <thead><tr><th>Thời gian</th><th>Tuyển thủ</th><th>Trạng thái</th><th>Tên Gói Đầu Tư</th><th>Số Tiền Nạp</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>Thời gian</th>
+                            <th>Tuyển thủ</th>
+                            <th>Trạng thái</th>
+                            <th>Tên Gói Đầu Tư</th>
+                            <th onclick="sortDepositTableByCol(4)" style="cursor:pointer;" title="Nhấn để sắp xếp">Số Tiền Nạp <span id="sort-icon-dep-4" style="font-size: 14px;">↕</span></th>
+                        </tr>
+                    </thead>
                     <tbody id="deposit-hist-table"></tbody>
                 </table>
             </div>
@@ -677,6 +685,32 @@
         document.getElementById("sort-icon-1").innerText = "↕";
         document.getElementById("sort-icon-2").innerText = "↕";
         document.getElementById("sort-icon-" + colIndex).innerText = isAsc ? "↑" : "↓";
+    };
+
+    // --- CHỨC NĂNG SẮP XẾP BẢNG LỊCH SỬ NẠP ---
+    let sortDepDirs = { 4: false }; 
+    
+    window.sortDepositTableByCol = (colIndex) => {
+        const tbody = document.getElementById("deposit-hist-table");
+        let rows = Array.from(tbody.querySelectorAll("tr"));
+        let isAsc = sortDepDirs[colIndex];
+
+        // Nếu bảng đang báo "Chưa có dữ liệu nạp" thì bỏ qua
+        if(rows.length === 1 && rows[0].cells.length === 1) return;
+
+        rows.sort((a, b) => {
+            let valA = parseFloat(a.cells[colIndex].innerText.replace(/[^0-9.-]+/g,"")) || 0;
+            let valB = parseFloat(b.cells[colIndex].innerText.replace(/[^0-9.-]+/g,"")) || 0;
+            
+            return isAsc ? (valA - valB) : (valB - valA);
+        });
+
+        sortDepDirs[colIndex] = !isAsc;
+        
+        tbody.innerHTML = "";
+        rows.forEach(row => tbody.appendChild(row));
+
+        document.getElementById("sort-icon-dep-" + colIndex).innerText = isAsc ? "↑" : "↓";
     };
 </script>
 </body>
