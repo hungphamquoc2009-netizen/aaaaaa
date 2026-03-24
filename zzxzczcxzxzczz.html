@@ -148,6 +148,16 @@
                 </div>
             </div>
             
+            <div class="card" style="border-top: 4px solid var(--info);">
+                <h3>🤖 Cài Đặt Bot Telegram Thông Báo</h3>
+                <p style="font-size:12px; color:#888; margin-top:0;">(Bot sẽ tự động nhắn tin cho bạn khi có khách Nạp Mua Gói hoặc Yêu Cầu Rút Tiền mới. <b>Lưu ý: Phải đang mở trang Admin này thì bot mới chạy.</b>)</p>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div><label style="font-size:11px; font-weight:bold; color:#555">Telegram Bot Token</label><input type="text" id="cfg-tele-token" placeholder="VD: 123456789:ABCdef..."></div>
+                    <div><label style="font-size:11px; font-weight:bold; color:#555">Chat ID Nhận Thông Báo</label><input type="text" id="cfg-tele-chatid" placeholder="VD: 987654321"></div>
+                </div>
+                <button class="btn btn-primary" style="padding: 12px 30px; margin-top: 15px;" onclick="saveTeleConfig()">💾 LƯU CẤU HÌNH BOT</button>
+            </div>
+
             <div class="card" style="border-top: 4px solid var(--warning);">
                 <h3>📢 Cài Đặt Thông Báo Popup & CSKH</h3>
                 <textarea id="cfg-notice" rows="3" placeholder="Nội dung thông báo hiện lên khi khách vào trang chủ..." style="margin-bottom: 15px; resize: vertical;"></textarea>
@@ -155,7 +165,7 @@
                     <div><label style="font-size:11px; font-weight:bold; color:#555">Link CSKH (Zalo/Tele)</label><input type="text" id="cfg-cskh" placeholder="VD: https://zalo.me/..."></div>
                     <div><label style="font-size:11px; font-weight:bold; color:#555">Link Nhóm Cộng Đồng</label><input type="text" id="cfg-group" placeholder="VD: https://zalo.me/g/..."></div>
                 </div>
-                <button class="btn btn-success" style="padding: 12px 30px; margin-top: 15px;" onclick="saveConfig()">💾 LƯU CẤU HÌNH</button>
+                <button class="btn btn-success" style="padding: 12px 30px; margin-top: 15px;" onclick="saveConfig()">💾 LƯU CẤU HÌNH CƠ BẢN</button>
             </div>
         </div>
 
@@ -271,10 +281,33 @@
     const db = firebase.firestore();
 
     let allUsersData = {}; let allPackages = {}; let currentViewingUid = ""; 
-    
-    // --- THÊM: BIẾN TOÀN CỤC ĐỂ TÍNH DOANH THU ---
     let globalTotalInvested = 0;
     let globalTotalWithdrawn = 0;
+
+    // --- BIẾN VÀ HÀM CHO TELEGRAM BOT ---
+    let teleToken = "";
+    let teleChatId = "";
+    let isFirstLoadUsers = true;
+    let userInvestCounts = {};
+    let isFirstLoadWithdraws = true;
+
+    function saveTeleConfig() {
+        db.collection("config").doc("telegram").set({
+            token: document.getElementById('cfg-tele-token').value.trim(),
+            chatId: document.getElementById('cfg-tele-chatid').value.trim()
+        }, {merge: true}).then(() => alert("✅ Đã lưu cấu hình Bot Telegram!"));
+    }
+
+    function sendTele(message) {
+        if(!teleToken || !teleChatId) return;
+        const url = `https://api.telegram.org/bot${teleToken}/sendMessage`;
+        fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ chat_id: teleChatId, text: message, parse_mode: "HTML" })
+        }).catch(e => console.log("Lỗi gửi Tele:", e));
+    }
+    // -------------------------------------
 
     function updateRevenueUI() {
         let revenue = globalTotalInvested - globalTotalWithdrawn;
@@ -328,16 +361,44 @@
     function parseDateStr(str) { try { let clean = str.replace(/-/g, '').replace(/,/g, '').trim(); let parts = clean.split(' '); let timeStr = parts[0].includes(':') ? parts[0] : parts[1]; let dateStr = parts[0].includes('/') ? parts[0] : parts[1]; const [h, m, s] = timeStr.split(':'); const [D, M, Y] = dateStr.split('/'); return new Date(Y, M - 1, D, h, m, s).getTime(); } catch(e) { return 0; } }
 
     function startAdminSystem() {
+        // Lấy cấu hình hệ thống
         db.collection("config").doc("system").onSnapshot(doc => { if(doc.exists) { let d = doc.data(); document.getElementById('cfg-notice').value = d.noticeContent || ""; document.getElementById('cfg-cskh').value = d.cskh || ""; document.getElementById('cfg-group').value = d.link || ""; } });
+        
+        // Lấy cấu hình Telegram
+        db.collection("config").doc("telegram").onSnapshot(doc => {
+            if(doc.exists) {
+                let d = doc.data(); teleToken = d.token || ""; teleChatId = d.chatId || "";
+                document.getElementById('cfg-tele-token').value = teleToken;
+                document.getElementById('cfg-tele-chatid').value = teleChatId;
+            }
+        });
 
         db.collection("users").onSnapshot((snap) => {
-            let userHtml = ''; let totalUsers=0, totalInvested=0; // Đã loại bỏ biến totalProfit
+            // Kiểm tra sự thay đổi để gửi thông báo Telegram (Mua gói nạp)
+            snap.docChanges().forEach(change => {
+                const u = change.doc.data();
+                const uid = change.doc.id;
+                let currentInvestCount = u.investments ? u.investments.length : 0;
+                
+                if (!isFirstLoadUsers && change.type === "modified") {
+                    let oldInvestCount = userInvestCounts[uid] || 0;
+                    if (currentInvestCount > oldInvestCount) {
+                        let newInvest = u.investments[currentInvestCount - 1]; 
+                        let msg = `💵 <b>CÓ ĐƠN NẠP MUA GÓI MỚI!</b>\n👤 Tuyển thủ: <b>${u.username}</b>\n📦 Mua gói: <b>${newInvest.name}</b>\n💰 Số tiền: <b>${Number(newInvest.amount).toLocaleString()} ₫</b>`;
+                        sendTele(msg);
+                    }
+                }
+                userInvestCounts[uid] = currentInvestCount;
+            });
+            isFirstLoadUsers = false;
+
+            let userHtml = ''; let totalUsers=0, totalInvested=0;
             let sysHistory = []; 
             let depositHistory = []; 
             
             snap.forEach(docSnap => {
                 const u = docSnap.data(); const uid = docSnap.id; allUsersData[uid] = u;
-                totalUsers++; // Đã bỏ lệnh cộng profit
+                totalUsers++;
 
                 let userInvested = 0;
                 if(u.investments) { 
@@ -360,11 +421,11 @@
 
                 userHtml += `<tr><td><b>${u.username}</b><br><span class="code-hl">${u.depositCode || "N/A"}</span></td><td style="color:var(--success); font-weight:bold">${userInvested.toLocaleString()} ₫</td><td style="color:var(--warning); font-weight:bold">${(u.profit||0).toLocaleString()} ₫</td><td><button class="btn btn-info" onclick="openUserModal('${uid}')">👁️ Hồ Sơ</button></td></tr>`;
             });
+            
             document.getElementById('user-table').innerHTML = userHtml;
             document.getElementById('stat-total-users').innerText = totalUsers; 
             document.getElementById('stat-total-invested').innerText = totalInvested.toLocaleString() + " ₫"; 
             
-            // Cập nhật lại biến toàn cục để tính doanh thu
             globalTotalInvested = totalInvested;
             updateRevenueUI();
 
@@ -377,11 +438,22 @@
         });
 
         db.collection("withdrawals").onSnapshot((snap) => {
+            // Kiểm tra sự thay đổi để gửi thông báo Telegram (Rút tiền)
+            snap.docChanges().forEach(change => {
+                if (!isFirstLoadWithdraws && change.type === "added") {
+                    let w = change.doc.data();
+                    if (w.status === "Chờ duyệt") {
+                        let msg = `🚨 <b>YÊU CẦU RÚT TIỀN MỚI!</b>\n👤 Tuyển thủ: <b>${w.username}</b>\n💰 Số tiền rút: <b>${Number(w.amount).toLocaleString()} ₫</b>\n🏦 Ngân hàng: ${w.bankId} - ${w.accountNo}`;
+                        sendTele(msg);
+                    }
+                }
+            });
+            isFirstLoadWithdraws = false;
+
             let pending = [], history = [];
             snap.forEach(docSnap => { let data = docSnap.data(); data.id = docSnap.id; if (data.status === "Chờ duyệt") pending.push(data); else history.push(data); });
             pending.sort((a,b) => b.rawTime - a.rawTime); history.sort((a,b) => b.rawTime - a.rawTime);
 
-            // Tính toán tổng tiền rút thành công
             let totalWithdrawn = 0;
             history.forEach(w => {
                 if (w.status === 'Thành công') {
@@ -433,14 +505,11 @@
         db.collection("users").doc(currentViewingUid).update({ profit: newProfit, transactions: trans }).then(() => alert("✅ Cập nhật tiền thành công!"));
     }
 
-    // --- BỘ TỪ ĐIỂN NHẬN DIỆN TẤT CẢ NGÂN HÀNG CHO VIETQR ---
     window.showQR = (bankId, accountNo, accountName, amount) => {
         try {
-            // 1. Chuẩn hóa tên ngân hàng để VietQR nhận diện được toàn bộ
             let rawBank = bankId.toUpperCase();
             let cleanBank = rawBank.replace("BANK", "").replace(/\s+/g, '').trim();
 
-            // Từ điển quy đổi tên khách nhập sang mã chuẩn của VietQR
             const bankMap = {
                 "VIETCOM": "VCB", "VCB": "VCB", "NGOAITHUONG": "VCB",
                 "TECHCOM": "TCB", "TCB": "TCB",
@@ -478,7 +547,6 @@
                 "TIMO": "TIMO", "CAKE": "CAKE", "TNEX": "TNEX"
             };
 
-            // Quét xem khách nhập có khớp từ khóa nào không (VD: nhập "Ngân hàng Techcombank" -> TCB)
             for (let key in bankMap) {
                 if (rawBank.includes(key)) {
                     cleanBank = bankMap[key];
@@ -486,18 +554,15 @@
                 }
             }
 
-            // 2. HIỂN THỊ DỮ LIỆU LÊN GIAO DIỆN
             let cleanAcc = accountNo.toString().replace(/\s+/g, '').trim();
             let cleanName = encodeURIComponent(accountName.trim());
             
             document.getElementById('qr-amount-text').innerText = amount.toLocaleString() + " ₫";
             document.getElementById('qr-bank-info').innerHTML = `Ngân hàng: ${cleanBank} - ${cleanAcc}<br>Chủ TK: ${accountName.toUpperCase()}`;
             
-            // 3. TẠO LINK QR CHUẨN
             const addInfo = encodeURIComponent("THANH TOAN RUI RO");
             const qrUrl = `https://img.vietqr.io/image/${cleanBank}-${cleanAcc}-compact2.png?amount=${amount}&accountName=${cleanName}&addInfo=${addInfo}`;
             
-            // 4. HIỂN THỊ QR
             const qrImg = document.getElementById('qr-image');
             qrImg.src = qrUrl;
             
@@ -523,7 +588,7 @@
         db.collection("withdrawals").doc(docId).update({ status: status }).then(() => alert("✅ Xử lý thành công!"));
     };
 
-    window.saveConfig = () => { db.collection("config").doc("system").set({ noticeContent: document.getElementById('cfg-notice').value, cskh: document.getElementById('cfg-cskh').value, link: document.getElementById('cfg-group').value }, {merge: true}).then(() => alert("✅ Đã lưu cấu hình!")); };
+    window.saveConfig = () => { db.collection("config").doc("system").set({ noticeContent: document.getElementById('cfg-notice').value, cskh: document.getElementById('cfg-cskh').value, link: document.getElementById('cfg-group').value }, {merge: true}).then(() => alert("✅ Đã lưu cấu hình cơ bản!")); };
 
     window.previewROI = () => {
         let price = Number(document.getElementById('p-price').value) || 0; let profit = Number(document.getElementById('p-profit').value) || 0; let days = Number(document.getElementById('p-days').value) || 0;
