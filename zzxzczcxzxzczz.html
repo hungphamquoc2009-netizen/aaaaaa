@@ -529,14 +529,34 @@
 
     function openUserModal(uid) { currentViewingUid = uid; document.getElementById('user-modal').style.display = 'flex'; renderUserModalData(uid); }
     function closeUserModal() { document.getElementById('user-modal').style.display = 'none'; currentViewingUid = ""; }
+    
+    // --- ĐÃ CẬP NHẬT: THÊM NÚT XÓA GÓI VÀO BẢNG HỒ SƠ ---
     function renderUserModalData(uid) {
         const u = allUsersData[uid]; if(!u) return;
         document.getElementById('um-title').innerText = "👤 Hồ sơ Tuyển thủ: " + u.username; document.getElementById('um-code').innerText = u.depositCode || "N/A"; document.getElementById('um-profit').innerText = (u.profit || 0).toLocaleString() + " ₫";
+        
         let invs = u.investments || [];
-        document.getElementById('um-invest-list').innerHTML = `<table style="width:100%; font-size:12px;">${invs.length ? [...invs].reverse().map(item => `<tr><td style="padding:10px">${item.date}</td><td style="padding:10px"><b>${item.name}</b></td><td style="padding:10px; color:var(--success); font-weight:bold">+${item.amount.toLocaleString()} ₫</td></tr>`).join('') : '<tr><td style="text-align:center;color:#888;padding:10px">Chưa mua gói nào.</td></tr>'}</table>`;
+        document.getElementById('um-invest-list').innerHTML = `<table style="width:100%; font-size:12px;">${invs.length ? [...invs].reverse().map((item, idx) => { let realIdx = invs.length - 1 - idx; return `<tr><td style="padding:10px">${item.date}</td><td style="padding:10px"><b>${item.name}</b></td><td style="padding:10px; color:var(--success); font-weight:bold">+${item.amount.toLocaleString()} ₫</td><td style="padding:10px; text-align:right;"><button class="btn btn-danger" style="padding:4px 8px; font-size:10px;" onclick="deleteUserPackage('${uid}', ${realIdx})">✖ Xóa</button></td></tr>`; }).join('') : '<tr><td style="text-align:center;color:#888;padding:10px">Chưa mua gói nào.</td></tr>'}</table>`;
+        
         let trans = u.transactions || [];
         document.getElementById('um-trans-list').innerHTML = `<table style="width:100%; font-size:12px;">${trans.length ? trans.map(tx => `<tr><td style="padding:10px">${tx.time}</td><td style="padding:10px; color:${tx.amount > 0 ? 'var(--success)' : 'var(--danger)'}; font-weight:bold">${tx.amount > 0 ? '+' : ''}${tx.amount.toLocaleString()} ₫</td><td style="padding:10px">${tx.note}</td></tr>`).join('') : '<tr><td style="text-align:center;color:#888;padding:10px">Chưa có biến động số dư.</td></tr>'}</table>`;
     }
+
+    // --- HÀM MỚI: XỬ LÝ XÓA GÓI CỦA KHÁCH ---
+    window.deleteUserPackage = (uid, index) => {
+        if(!confirm("⚠️ Bạn có chắc muốn XÓA gói đầu tư này của khách không?\n(Sau khi xóa, hệ thống sẽ tự động trừ đi số 'Tổng Vốn Đã Nạp' của hệ thống và xóa lịch sử nạp)")) return;
+        
+        let u = allUsersData[uid];
+        if(u && u.investments) {
+            u.investments.splice(index, 1); 
+            db.collection("users").doc(uid).update({ investments: u.investments })
+            .then(() => {
+                alert("✅ Đã xóa gói thành công!");
+                renderUserModalData(uid); 
+            })
+            .catch(err => alert("Lỗi: " + err.message));
+        }
+    };
 
     function promptAdjustMoney() {
         if(!currentViewingUid) return; const u = allUsersData[currentViewingUid];
