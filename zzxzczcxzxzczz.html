@@ -391,11 +391,32 @@
     }
 
     window.showQR = (bankId, accountNo, accountName, amount) => {
-        let cleanBankId = bankId.trim(); let cleanAccountNo = accountNo.trim(); let cleanName = encodeURIComponent(accountName.trim());
-        document.getElementById('qr-bank-info').innerHTML = `Khách nhận: <span style="color:var(--danger); font-size:18px;">${amount.toLocaleString()} ₫</span><br>Ngân hàng: ${cleanBankId} - ${cleanAccountNo}<br>Chủ TK: ${accountName}`;
-        document.getElementById('qr-image').src = `https://img.vietqr.io/image/${cleanBankId}-${cleanAccountNo}-compact2.png?amount=${amount}&accountName=${cleanName}&addInfo=ThanhToan`;
-        document.getElementById('qr-modal').style.display = 'flex';
+    // 1. LÀM SẠCH DỮ LIỆU: Xóa chữ "BANK", xóa khoảng trắng thừa
+    let cleanBank = bankId.toUpperCase().replace("BANK", "").trim(); 
+    let cleanAcc = accountNo.toString().trim();
+    let cleanName = encodeURIComponent(accountName.trim());
+    
+    // Hiển thị chữ lên giao diện cho đẹp
+    document.getElementById('qr-amount-text').innerText = amount.toLocaleString() + " ₫";
+    document.getElementById('qr-bank-info').innerHTML = `Ngân hàng: ${cleanBank} - ${cleanAcc}<br>Chủ TK: ${accountName.toUpperCase()}`;
+    
+    // 2. TẠO LINK QR CHUẨN (Dùng template 'compact2' cho gọn)
+    // Lưu ý: encodeURIComponent phần addInfo để tránh lỗi tiếng Việt/khoảng trắng
+    const addInfo = encodeURIComponent("THANH TOAN INVEST PRO");
+    const qrUrl = `https://img.vietqr.io/image/${cleanBank}-${cleanAcc}-compact2.png?amount=${amount}&accountName=${cleanName}&addInfo=${addInfo}`;
+    
+    // 3. HIỂN THỊ
+    const qrImg = document.getElementById('qr-image');
+    qrImg.src = qrUrl;
+    
+    // Thêm kiểm tra nếu ảnh lỗi thì báo Admin
+    qrImg.onerror = function() {
+        alert("❌ Không thể tạo mã QR. Hãy kiểm tra lại Tên Ngân Hàng (Nên dùng: MB, VCB, ICB...)");
+        this.src = "https://placehold.co/300x300?text=Loi+Ma+QR";
     };
+
+    document.getElementById('qr-modal').style.display = 'flex';
+};
 
     window.handleWithdraw = (docId, status, uid, amount) => {
         if(!confirm(`Xác nhận đánh dấu đơn này là: ${status}?`)) return;
