@@ -97,12 +97,19 @@
 </div>
 
 <div id="qr-modal" class="modal-overlay">
-    <div class="modal-content" style="max-width: 350px;">
-        <div class="modal-header" style="background: var(--info);"><span>📱 Quét Mã Trả Khách</span><span class="modal-close" onclick="document.getElementById('qr-modal').style.display='none'">✕</span></div>
-        <div class="modal-body" style="text-align: center;">
-            <p id="qr-bank-info" style="font-size: 13px; color: #444; font-weight: bold; margin-bottom: 15px; line-height: 1.5;"></p>
-            <img id="qr-image" src="" alt="Mã QR VietQR" style="width: 100%; border-radius: 10px; border: 1px solid #eee;">
-            <p style="font-size: 11px; color: #888; margin-top: 15px; font-style: italic;">* Lưu ý: Kiểm tra kỹ Tên Chủ Tài Khoản trước khi chuyển.</p>
+    <div class="modal-content" style="max-width: 380px; border-radius: 16px; overflow: hidden;">
+        <div class="modal-header" style="background: var(--info); padding: 15px 20px;">
+            <span style="font-size: 16px;">📱 Quét Mã Trả Khách</span>
+            <span class="modal-close" onclick="document.getElementById('qr-modal').style.display='none'">✕</span>
+        </div>
+        <div class="modal-body" style="text-align: center; padding: 25px;">
+            <p style="font-size: 12px; color: #888; font-weight: bold; text-transform: uppercase; margin-bottom: 5px;">Khách nhận:</p>
+            <h2 id="qr-amount-text" style="color: #e74c3c; font-size: 28px; font-weight: 900; margin-bottom: 15px;">0 ₫</h2>
+            <p id="qr-bank-info" style="font-size: 13px; color: #444; font-weight: 600; line-height: 1.5; margin-bottom: 20px; background: #f8fafc; padding: 10px; border-radius: 10px;"></p>
+            <div style="background: #fff; padding: 10px; border: 1px solid #eee; border-radius: 12px; margin-bottom: 15px;">
+                <img id="qr-image" src="" alt="Mã QR VietQR" style="width: 100%; display: block;">
+            </div>
+            <p style="font-size: 11px; color: #888; font-style: italic;">* Lưu ý: Kiểm tra kỹ Tên Chủ Tài Khoản trước khi chuyển.</p>
         </div>
     </div>
 </div>
@@ -390,33 +397,38 @@
         db.collection("users").doc(currentViewingUid).update({ profit: newProfit, transactions: trans }).then(() => alert("✅ Cập nhật tiền thành công!"));
     }
 
-window.showQR = (bankId, accountNo, accountName, amount) => {
-    // 1. LÀM SẠCH DỮ LIỆU: Xóa chữ "BANK", xóa khoảng trắng thừa
-    let cleanBank = bankId.toUpperCase().replace("BANK", "").trim(); 
-    let cleanAcc = accountNo.toString().trim();
-    let cleanName = encodeURIComponent(accountName.trim());
-    
-    // Hiển thị chữ lên giao diện cho đẹp
-    document.getElementById('qr-amount-text').innerText = amount.toLocaleString() + " ₫";
-    document.getElementById('qr-bank-info').innerHTML = `Ngân hàng: ${cleanBank} - ${cleanAcc}<br>Chủ TK: ${accountName.toUpperCase()}`;
-    
-    // 2. TẠO LINK QR CHUẨN (Dùng template 'compact2' cho gọn)
-    // Lưu ý: encodeURIComponent phần addInfo để tránh lỗi tiếng Việt/khoảng trắng
-    const addInfo = encodeURIComponent("THANH TOAN INVEST PRO");
-    const qrUrl = `https://img.vietqr.io/image/${cleanBank}-${cleanAcc}-compact2.png?amount=${amount}&accountName=${cleanName}&addInfo=${addInfo}`;
-    
-    // 3. HIỂN THỊ
-    const qrImg = document.getElementById('qr-image');
-    qrImg.src = qrUrl;
-    
-    // Thêm kiểm tra nếu ảnh lỗi thì báo Admin
-    qrImg.onerror = function() {
-        alert("❌ Không thể tạo mã QR. Hãy kiểm tra lại Tên Ngân Hàng (Nên dùng: MB, VCB, ICB...)");
-        this.src = "https://placehold.co/300x300?text=Loi+Ma+QR";
-    };
+    // --- ĐÃ SỬA: HÀM HIỂN THỊ QR RÚT TIỀN (FIXED LỖI KHÔNG MỞ MODAL) ---
+    window.showQR = (bankId, accountNo, accountName, amount) => {
+        try {
+            // 1. LÀM SẠCH DỮ LIỆU
+            let cleanBank = bankId.toUpperCase().replace("BANK", "").trim(); 
+            let cleanAcc = accountNo.toString().trim();
+            let cleanName = encodeURIComponent(accountName.trim());
+            
+            // 2. HIỂN THỊ DỮ LIỆU LÊN GIAO DIỆN
+            // Đã bổ sung ID qr-amount-text vào HTML để không bị lỗi script
+            document.getElementById('qr-amount-text').innerText = amount.toLocaleString() + " ₫";
+            document.getElementById('qr-bank-info').innerHTML = `Ngân hàng: ${cleanBank} - ${cleanAcc}<br>Chủ TK: ${accountName.toUpperCase()}`;
+            
+            // 3. TẠO LINK QR CHUẨN
+            const addInfo = encodeURIComponent("THANH TOAN INVEST PRO");
+            const qrUrl = `https://img.vietqr.io/image/${cleanBank}-${cleanAcc}-compact2.png?amount=${amount}&accountName=${cleanName}&addInfo=${addInfo}`;
+            
+            // 4. HIỂN THỊ QR
+            const qrImg = document.getElementById('qr-image');
+            qrImg.src = qrUrl;
+            
+            qrImg.onerror = function() {
+                alert("❌ Không thể tạo mã QR. Hãy kiểm tra lại Tên Ngân Hàng (Nên dùng: MB, VCB, ICB...)");
+                this.src = "https://placehold.co/300x300?text=Loi+Ma+QR";
+            };
 
-    document.getElementById('qr-modal').style.display = 'flex';
-};
+            document.getElementById('qr-modal').style.display = 'flex';
+        } catch (e) {
+            console.error("Lỗi khi mở QR:", e);
+            alert("Có lỗi xảy ra khi tạo QR trả khách!");
+        }
+    };
 
     window.handleWithdraw = (docId, status, uid, amount) => {
         if(!confirm(`Xác nhận đánh dấu đơn này là: ${status}?`)) return;
