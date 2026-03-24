@@ -155,7 +155,10 @@
                     <div><label style="font-size:11px; font-weight:bold; color:#555">Telegram Bot Token</label><input type="text" id="cfg-tele-token" placeholder="VD: 123456789:ABCdef..."></div>
                     <div><label style="font-size:11px; font-weight:bold; color:#555">Chat ID Nhận Thông Báo</label><input type="text" id="cfg-tele-chatid" placeholder="VD: 987654321"></div>
                 </div>
-                <button class="btn btn-primary" style="padding: 12px 30px; margin-top: 15px;" onclick="saveTeleConfig()">💾 LƯU CẤU HÌNH BOT</button>
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <button class="btn btn-primary" style="padding: 12px 30px;" onclick="saveTeleConfig()">💾 LƯU CẤU HÌNH BOT</button>
+                    <button class="btn btn-warning" style="padding: 12px 30px;" onclick="testTeleBot()">🔔 GỬI THỬ TIN NHẮN</button>
+                </div>
             </div>
 
             <div class="card" style="border-top: 4px solid var(--warning);">
@@ -307,6 +310,25 @@
             body: JSON.stringify({ chat_id: teleChatId, text: message, parse_mode: "HTML" })
         }).catch(e => console.log("Lỗi gửi Tele:", e));
     }
+
+    window.testTeleBot = () => {
+        let tk = document.getElementById('cfg-tele-token').value.trim();
+        let cid = document.getElementById('cfg-tele-chatid').value.trim();
+        if(!tk || !cid) return alert("Vui lòng nhập đủ Token và Chat ID trước khi test!");
+        
+        const url = `https://api.telegram.org/bot${tk}/sendMessage`;
+        fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ chat_id: cid, text: "✅ <b>TEST BOT THÀNH CÔNG!</b>\nHệ thống đã kết nối với Telegram.", parse_mode: "HTML" })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.ok) alert("✅ Đã gửi tin nhắn test thành công! Hãy kiểm tra Telegram của bạn.");
+            else alert("❌ Lỗi từ Telegram: " + data.description + "\n\n👉 Bạn hãy kiểm tra lại Token/Chat ID và ĐẢM BẢO đã vào Telegram bấm /start với bot nhé!");
+        })
+        .catch(e => alert("❌ Lỗi mạng: " + e.message));
+    };
     // -------------------------------------
 
     function updateRevenueUI() {
@@ -465,7 +487,7 @@
             if(twEl) twEl.innerText = totalWithdrawn.toLocaleString() + " ₫";
             updateRevenueUI();
 
-            document.getElementById('pending-withdraw-table').innerHTML = pending.map(w => `<tr><td>${w.time}</td><td><b>${w.username}</b></td><td><div style="font-size:11px; color:var(--primary); font-weight:bold; background:#eef2ff; padding:5px; border-radius:5px;">${w.bankId} - ${w.accountNo}<br>${w.accountName}</div></td><td style="color:var(--danger); font-weight:bold; font-size:16px;">${w.amount.toLocaleString()} ₫</td><td><button class="btn btn-info" style="margin-bottom:5px; width:100%" onclick="showQR('${w.bankId}', '${w.accountNo}', '${w.accountName}', ${w.amount})">📱 QUÉT MÃ TRẢ KHÁCH</button><br><div style="display:flex; gap:5px;"><button class="btn btn-success" style="width:50%" onclick="handleWithdraw('${w.id}', 'Thành công', '${w.uid}', ${w.amount})">✔ Duyệt</button><button class="btn btn-danger" style="width:50%" onclick="handleWithdraw('${w.id}', 'Từ chối', '${w.uid}', ${w.amount})">✖ Từ chối</button></div></td></tr>`).join('') || '<tr><td colspan="5" style="text-align:center; color:#888;">Không có đơn rút tiền chờ duyệt.</td></tr>';
+            document.getElementById('pending-withdraw-table').innerHTML = pending.map(w => `<tr><td>${w.time}</td><td><b>${w.username}</b></td><td><div style="font-size:11px; color:var(--primary); font-weight:bold; background:#eef2ff; padding:5px; border-radius:5px;">${w.bankId} - ${w.accountNo}<br>${w.accountName}</div></td><td style="color:var(--danger); font-weight:bold; font-size:16px;">${w.amount.toLocaleString()} ₫</td><td><button class="btn btn-info" style="margin-bottom:5px; width:100%" onclick="showQR('${w.bankId}', '${w.accountNo}', '${w.accountName}', ${w.amount}, '${w.id}')">📱 QUÉT MÃ TRẢ KHÁCH</button><br><div style="display:flex; gap:5px;"><button class="btn btn-success" style="width:50%" onclick="handleWithdraw('${w.id}', 'Thành công', '${w.uid}', ${w.amount})">✔ Duyệt</button><button class="btn btn-danger" style="width:50%" onclick="handleWithdraw('${w.id}', 'Từ chối', '${w.uid}', ${w.amount})">✖ Từ chối</button></div></td></tr>`).join('') || '<tr><td colspan="5" style="text-align:center; color:#888;">Không có đơn rút tiền chờ duyệt.</td></tr>';
             document.getElementById('history-withdraw-table').innerHTML = history.map(w => `<tr><td>${w.time}</td><td><b>${w.username}</b></td><td><div style="font-size:11px; color:var(--primary); font-weight:bold">${w.bankId} - ${w.accountNo}</div></td><td style="color:var(--danger); font-weight:bold">${w.amount.toLocaleString()} ₫</td><td><span class="badge" style="background:${w.status === 'Thành công' ? '#e8f8f5; color:#2ecc71' : '#fdedec; color:#e74c3c'}">${w.status}</span></td></tr>`).join('') || '<tr><td colspan="5" style="text-align:center; color:#888;">Chưa có lịch sử xử lý.</td></tr>';
         });
 
@@ -505,7 +527,7 @@
         db.collection("users").doc(currentViewingUid).update({ profit: newProfit, transactions: trans }).then(() => alert("✅ Cập nhật tiền thành công!"));
     }
 
-    window.showQR = (bankId, accountNo, accountName, amount) => {
+    window.showQR = (bankId, accountNo, accountName, amount, withdrawId) => {
         try {
             let rawBank = bankId.toUpperCase();
             let cleanBank = rawBank.replace("BANK", "").replace(/\s+/g, '').trim();
@@ -560,7 +582,10 @@
             document.getElementById('qr-amount-text').innerText = amount.toLocaleString() + " ₫";
             document.getElementById('qr-bank-info').innerHTML = `Ngân hàng: ${cleanBank} - ${cleanAcc}<br>Chủ TK: ${accountName.toUpperCase()}`;
             
-            const addInfo = encodeURIComponent("THANH TOAN RUI RO");
+            // Dòng này sẽ sinh ra chữ "RUT TIEN + 6 số cuối ID"
+            let shortId = withdrawId ? withdrawId.slice(-6).toUpperCase() : "CK";
+            const addInfo = encodeURIComponent("RUT TIEN " + shortId);
+            
             const qrUrl = `https://img.vietqr.io/image/${cleanBank}-${cleanAcc}-compact2.png?amount=${amount}&accountName=${cleanName}&addInfo=${addInfo}`;
             
             const qrImg = document.getElementById('qr-image');
