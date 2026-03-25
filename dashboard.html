@@ -65,8 +65,7 @@
         table { width: 100%; border-collapse: collapse; min-width: 500px; }
         th { text-align: left; color: var(--text-gray); padding: 12px; font-size: 12px; text-transform: uppercase; }
         td { padding: 15px 12px; border-bottom: 1px solid #1a1a1a; font-size: 14px; }
-        .live-profit { color: #ff9f43; font-weight: 900; font-size: 15px; text-shadow: 0 0 10px rgba(255,159,67,0.3); font-family: monospace;}
-
+        
         .invite-banner { background: linear-gradient(135deg, #1a0004, var(--garena-red)); padding: 30px; border-radius: 16px; text-align: center; margin-bottom: 25px; border: 1px solid #ff4757; box-shadow: var(--neon-glow);}
         .invite-code { font-size: 40px; font-weight: 900; letter-spacing: 5px; color: #fff; margin: 10px 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);}
         .btn-copy { background: #fff; color: var(--garena-red); border: none; padding: 10px 25px; border-radius: 20px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 12px; transition: 0.2s;}
@@ -153,11 +152,11 @@
         </div>
 
         <div id="page-mypkgs" class="page">
-            <h3 style="margin-bottom:15px; text-transform:uppercase; font-size:16px; border-left: 4px solid var(--success); padding-left: 10px;">Túi Đồ Đang Đầu Tư</h3>
-            <p style="color: #888; font-size: 13px; margin-bottom: 20px;">* Tiền lãi sẽ được hệ thống trả thẳng vào Số Dư Khả Dụng mỗi ngày.</p>
+            <h3 style="margin-bottom:15px; text-transform:uppercase; font-size:16px; border-left: 4px solid var(--success); padding-left: 10px;">Túi Đồ Sinh Lãi (Ngày)</h3>
+            <p style="color: #888; font-size: 13px; margin-bottom: 20px;">* Hệ thống tự động sinh lời mỗi 24 giờ. Bạn có thể vào đây nhận lãi mỗi ngày!</p>
             <div class="table-section">
                 <table>
-                    <thead><tr><th>Vật Phẩm Quỹ</th><th>Thời Gian Mua</th><th>Trạng Thái</th></tr></thead>
+                    <thead><tr><th>Vật Phẩm Quỹ</th><th>Thời Gian Đầu Tư</th><th>Trạng Thái</th></tr></thead>
                     <tbody id="investments-list"></tbody>
                 </table>
             </div>
@@ -282,6 +281,7 @@
         const db = firebase.firestore();
 
         let myDepositCode = ""; let currentItemCount = -1; let globalProfit = 0; let globalUid = ""; let globalUsername = ""; let globalEmail = ""; let myInvestments = []; let globalClaimedCommission = 0; let availableCommission = 0; let globalTransactions = [];
+        let packagesMap = {}; // Biến mới để lưu thông tin % lãi suất phục vụ tính lãi hằng ngày
 
         function generateFakeWithdrawals() {
             const prefixes = ['032','033','034','035','036','037','038','096','097','098','086','091','094','083','070','079','089','090'];
@@ -311,12 +311,15 @@
             }
         });
 
-        // TẢI SẢN PHẨM & SẮP XẾP THEO GIÁ
+        // TẢI SẢN PHẨM & LƯU LẠI MAP ĐỂ TÍNH LÃI
         db.collection("packages").onSnapshot((snapshot) => {
             let pArr = [];
-            snapshot.forEach((doc) => { pArr.push(doc.data()); });
+            snapshot.forEach((doc) => { 
+                let data = doc.data();
+                pArr.push(data); 
+                packagesMap[data.name] = data; // Lưu để truy xuất % nhanh
+            });
             
-            // Sắp xếp tự động giá trị từ thấp lên cao
             pArr.sort((a, b) => a.price - b.price);
 
             const storeBox = document.getElementById('dynamic-store'); storeBox.innerHTML = ""; 
@@ -346,6 +349,9 @@
                         <button class="btn-buy" onclick="openPayment('${pCode}', ${p.price}, '${safeName}')">Đầu Tư Ngay</button>
                     </div>`;
             });
+
+            // Sau khi load xong danh sách gói, cập nhật lại màn hình "Túi đồ"
+            renderMyPackages();
         });
 
         window.openPayment = function(pkgCode, price, pkgName) {
@@ -361,6 +367,73 @@
         }
 
         function parseDateStr(str) { try { let clean = str.replace(/-/g, '').replace(/,/g, '').trim(); let parts = clean.split(' '); let timeStr = parts[0].includes(':') ? parts[0] : parts[1]; let dateStr = parts[0].includes('/') ? parts[0] : parts[1]; const [h, m, s] = timeStr.split(':'); const [D, M, Y] = dateStr.split('/'); return new Date(Y, M - 1, D, h, m, s).getTime(); } catch(e) { return Date.now(); } }
+
+        // --- HÀM TÍNH TOÁN & HIỂN THỊ TÚI ĐỒ ĐỘNG ---
+        window.renderMyPackages = () => {
+            if (!globalUid || Object.keys(packagesMap).length === 0) return;
+            let total = 0;
+            
+            let html = myInvestments.map((item, index) => {
+                total += item.amount;
+                let pkg = packagesMap[item.name] || { profit: 0 };
+                let dailyProfit = (item.amount * pkg.profit) / 100;
+                
+                // Mấu chốt người cũ: Nếu không có lastClaimDate, lấy ngày mua làm mốc.
+                let lastClaim = item.lastClaimDate || parseDateStr(item.date);
+                let now = Date.now();
+                let timeDiff = now - lastClaim;
+                let isReady = timeDiff >= 86400000; // Đã qua 24 tiếng (86,400,000 milliseconds)
+
+                let statusHtml = '';
+                if (isReady) {
+                    statusHtml = `<button style="background:var(--success); color:#000; border:none; padding:8px 12px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:12px; transition:0.2s;" onclick="claimDailyInterest(${index})" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">🎁 Nhận Lãi (+${dailyProfit.toLocaleString('vi-VN')}đ)</button>`;
+                } else {
+                    let hoursLeft = Math.ceil((86400000 - timeDiff) / 3600000);
+                    statusHtml = `<span style="background:#222; color:#888; padding:6px 10px; border-radius:6px; font-size:11px; border: 1px solid #333;">⏳ Chờ ${hoursLeft}h nữa</span>`;
+                }
+
+                return `<tr><td><b style="color:#fff">📦 ${item.name}</b><br><span style="font-size:11px; color:#888;">Gốc: ${item.amount.toLocaleString('vi-VN')} ₫</span></td><td style="color:#aaa">${item.date}</td><td>${statusHtml}</td></tr>`;
+            }).reverse().join(''); // Đảo ngược mảng để cái mới nhất lên trên
+
+            const invList = document.getElementById('investments-list');
+            if(invList) invList.innerHTML = html || '<tr><td colspan="3" style="text-align:center;color:#555;padding:20px">Túi đồ trống. Hãy ra Căn Cứ để chọn quỹ sinh lời!</td></tr>';
+            
+            const invDisp = document.getElementById('invested-display');
+            if(invDisp) invDisp.innerText = total.toLocaleString('vi-VN') + " VNĐ";
+        };
+
+        // Hàm cập nhật đồng hồ đếm ngược mỗi phút
+        setInterval(renderMyPackages, 60000);
+
+        // --- HÀM NGƯỜI DÙNG BẤM TỰ NHẬN LÃI ---
+        window.claimDailyInterest = (index) => {
+            let item = myInvestments[index];
+            let pkg = packagesMap[item.name];
+            if (!pkg) return alert("Cấu hình gói này không còn tồn tại, không thể tính lãi!");
+
+            let dailyProfit = (item.amount * pkg.profit) / 100;
+            let lastClaim = item.lastClaimDate || parseDateStr(item.date);
+            let now = Date.now();
+
+            if (now - lastClaim < 86400000) return alert("Chưa đủ 24 giờ, vui lòng quay lại sau!");
+
+            // Cập nhật lại thời gian nhận. 
+            // Nếu khách lỡ quên 2 ngày, mỗi lần bấm chỉ cộng lên 1 ngày để họ bấm lần tiếp theo ngay lập tức.
+            item.lastClaimDate = lastClaim + 86400000;
+
+            let exactTime = new Date().toLocaleString('vi-VN');
+            let newTrans = [...globalTransactions];
+            newTrans.unshift({ time: exactTime, amount: dailyProfit, note: `Tự động nhận lãi gói: ${item.name}` });
+
+            db.collection("users").doc(globalUid).update({
+                profit: globalProfit + dailyProfit,
+                investments: myInvestments,
+                transactions: newTrans
+            }).then(() => {
+                alert(`✅ Nhận thành công ${dailyProfit.toLocaleString('vi-VN')} đ tiền lãi vào Số Dư Khả Dụng!`);
+                // UI sẽ tự reload nhờ vào onSnapshot của Firebase
+            }).catch(e => alert("Lỗi khi nhận lãi: " + e.message));
+        };
 
         auth.onAuthStateChanged((user) => {
             if (user) {
@@ -379,12 +452,8 @@
                         if (currentItemCount !== -1 && myInvestments.length > currentItemCount) { document.getElementById('paymentModal').style.display = 'none'; alert("🎉 BÙM! Thanh toán thành công! Quỹ đầu tư đã được kích hoạt."); }
                         currentItemCount = myInvestments.length;
 
-                        let total = 0;
-                        document.getElementById('investments-list').innerHTML = myInvestments.length ? myInvestments.map((item) => {
-                            total += item.amount;
-                            return `<tr><td><b style="color:#fff">📦 ${item.name}</b><br><span style="font-size:11px; color:#888;">Gốc: ${item.amount.toLocaleString('vi-VN')} ₫</span></td><td style="color:#aaa">${item.date}</td><td><span class="status-badge" style="color:var(--success); font-weight:bold;">🟢 Đang sinh lời</span></td></tr>`;
-                        }).reverse().join('') : '<tr><td colspan="3" style="text-align:center;color:#555;padding:20px">Túi đồ trống. Hãy ra Căn Cứ để chọn quỹ sinh lời!</td></tr>';
-                        document.getElementById('invested-display').innerText = total.toLocaleString('vi-VN') + " VNĐ";
+                        // Gọi render danh sách khi có thay đổi dữ liệu User
+                        renderMyPackages();
 
                         let myHistoryArray = [];
                         myInvestments.forEach(item => { myHistoryArray.push({ time: item.date, type: "Nạp Mua Gói", tColor: "var(--info)", amount: `-${item.amount.toLocaleString()} ₫`, aColor: "#aaa", detail: item.name, rawTime: parseDateStr(item.date) }); });
