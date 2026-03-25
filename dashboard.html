@@ -153,11 +153,11 @@
         </div>
 
         <div id="page-mypkgs" class="page">
-            <h3 style="margin-bottom:15px; text-transform:uppercase; font-size:16px; border-left: 4px solid var(--success); padding-left: 10px;">Túi Đồ Sinh Lãi (Realtime)</h3>
-            <p style="color: #888; font-size: 13px; margin-bottom: 20px;">* Lợi nhuận của các quỹ này đang được nhảy số liên tục theo thời gian thực.</p>
+            <h3 style="margin-bottom:15px; text-transform:uppercase; font-size:16px; border-left: 4px solid var(--success); padding-left: 10px;">Túi Đồ Đang Đầu Tư</h3>
+            <p style="color: #888; font-size: 13px; margin-bottom: 20px;">* Tiền lãi sẽ được hệ thống trả thẳng vào Số Dư Khả Dụng mỗi ngày.</p>
             <div class="table-section">
                 <table>
-                    <thead><tr><th>Vật Phẩm Quỹ</th><th>Thời Gian Đầu Tư</th><th>Lãi Tạm Tính</th><th>Trạng Thái</th></tr></thead>
+                    <thead><tr><th>Vật Phẩm Quỹ</th><th>Thời Gian Mua</th><th>Trạng Thái</th></tr></thead>
                     <tbody id="investments-list"></tbody>
                 </table>
             </div>
@@ -281,7 +281,7 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        let myDepositCode = ""; let currentItemCount = -1; let globalProfit = 0; let globalUid = ""; let globalUsername = ""; let globalEmail = ""; let myInvestments = []; let liveProfitInterval = null; let globalClaimedCommission = 0; let availableCommission = 0; let globalTransactions = [];
+        let myDepositCode = ""; let currentItemCount = -1; let globalProfit = 0; let globalUid = ""; let globalUsername = ""; let globalEmail = ""; let myInvestments = []; let globalClaimedCommission = 0; let availableCommission = 0; let globalTransactions = [];
 
         function generateFakeWithdrawals() {
             const prefixes = ['032','033','034','035','036','037','038','096','097','098','086','091','094','083','070','079','089','090'];
@@ -362,19 +362,6 @@
 
         function parseDateStr(str) { try { let clean = str.replace(/-/g, '').replace(/,/g, '').trim(); let parts = clean.split(' '); let timeStr = parts[0].includes(':') ? parts[0] : parts[1]; let dateStr = parts[0].includes('/') ? parts[0] : parts[1]; const [h, m, s] = timeStr.split(':'); const [D, M, Y] = dateStr.split('/'); return new Date(Y, M - 1, D, h, m, s).getTime(); } catch(e) { return Date.now(); } }
 
-        function startLiveProfit() {
-            if(liveProfitInterval) clearInterval(liveProfitInterval);
-            liveProfitInterval = setInterval(() => {
-                const now = Date.now();
-                myInvestments.forEach((item, index) => {
-                    let buyTime = parseDateStr(item.date); let elapsedSec = (now - buyTime) / 1000; if(elapsedSec < 0) elapsedSec = 0;
-                    let liveP = elapsedSec * ((item.amount * 0.3) / 86400); 
-                    let el = document.getElementById('live-p-' + index);
-                    if(el) el.innerText = '+' + liveP.toLocaleString('vi-VN', {maximumFractionDigits: 1}) + ' ₫';
-                });
-            }, 1000); 
-        }
-
         auth.onAuthStateChanged((user) => {
             if (user) {
                 globalUid = user.uid; globalEmail = user.email; 
@@ -393,12 +380,11 @@
                         currentItemCount = myInvestments.length;
 
                         let total = 0;
-                        document.getElementById('investments-list').innerHTML = myInvestments.length ? myInvestments.map((item, index) => {
+                        document.getElementById('investments-list').innerHTML = myInvestments.length ? myInvestments.map((item) => {
                             total += item.amount;
-                            return `<tr><td><b style="color:#fff">📦 ${item.name}</b><br><span style="font-size:11px; color:#888;">Gốc: ${item.amount.toLocaleString('vi-VN')} ₫</span></td><td style="color:#aaa">${item.date}</td><td class="live-profit" id="live-p-${index}">Đang tải...</td><td><span class="status-badge" style="color:var(--success)">Đang chạy</span></td></tr>`;
-                        }).reverse().join('') : '<tr><td colspan="4" style="text-align:center;color:#555;padding:20px">Túi đồ trống. Hãy ra Căn Cứ để chọn quỹ sinh lời!</td></tr>';
+                            return `<tr><td><b style="color:#fff">📦 ${item.name}</b><br><span style="font-size:11px; color:#888;">Gốc: ${item.amount.toLocaleString('vi-VN')} ₫</span></td><td style="color:#aaa">${item.date}</td><td><span class="status-badge" style="color:var(--success); font-weight:bold;">🟢 Đang sinh lời</span></td></tr>`;
+                        }).reverse().join('') : '<tr><td colspan="3" style="text-align:center;color:#555;padding:20px">Túi đồ trống. Hãy ra Căn Cứ để chọn quỹ sinh lời!</td></tr>';
                         document.getElementById('invested-display').innerText = total.toLocaleString('vi-VN') + " VNĐ";
-                        startLiveProfit();
 
                         let myHistoryArray = [];
                         myInvestments.forEach(item => { myHistoryArray.push({ time: item.date, type: "Nạp Mua Gói", tColor: "var(--info)", amount: `-${item.amount.toLocaleString()} ₫`, aColor: "#aaa", detail: item.name, rawTime: parseDateStr(item.date) }); });
